@@ -96,7 +96,7 @@
 
                 <HBox GridPane.rowIndex="1" GridPane.columnIndex="0">
                     <Label text="Fitness: "/>
-                    <Label text="${controller.stats.fitness}"/>
+                    <Label text="${controller.stats.fitnessDisplay}"/>
                 </HBox>
 
                 <HBox GridPane.rowIndex="1" GridPane.columnIndex="1">

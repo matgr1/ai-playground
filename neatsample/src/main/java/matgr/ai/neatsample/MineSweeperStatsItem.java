@@ -2,8 +2,11 @@ package matgr.ai.neatsample;
 
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ReadOnlyStringProperty;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.StringProperty;
 
 public class MineSweeperStatsItem implements Cloneable {
 
@@ -57,9 +60,21 @@ public class MineSweeperStatsItem implements Cloneable {
     }
     public void setFitness(Double value) {
         fitness.set(value);
+        setFitnessDisplay(String.format("%.2f", value));
     }
     public DoubleProperty fitnessProperty() {
         return fitness;
+    }
+
+    private ReadOnlyStringWrapper fitnessDisplay = new ReadOnlyStringWrapper();
+    public String getFitnessDisplay() {
+        return fitnessDisplay.get();
+    }
+    private void setFitnessDisplay(String value) {
+        fitnessDisplay.set(value);
+    }
+    public ReadOnlyStringProperty fitnessDisplayProperty() {
+        return fitnessDisplay.getReadOnlyProperty();
     }
 
     public MineSweeperStatsItem(){

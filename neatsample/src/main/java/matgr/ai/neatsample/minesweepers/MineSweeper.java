@@ -19,12 +19,10 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
 
     private final static Logger logger = Logger.getLogger(MineSweeper.class.getName());
 
-    private long lastMineHitIteration;
-    private boolean lastMineHitWasExplosion;
-
     private Point position;
     private MineSweeperDirection direction;
-    private double fitness;
+
+    private MineSweeperFitnessState fitnessState;
 
     public final MineSweeperSettings settings;
 
@@ -37,9 +35,7 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
 
         this.settings = settings;
 
-        fitness = 0.0;
-        lastMineHitIteration = 0;
-        lastMineHitWasExplosion = false;
+        this.fitnessState = new MineSweeperFitnessState(0);
 
         randomizePositionAndDirection(random, settings.minefieldSize);
 
@@ -50,8 +46,8 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
     }
 
     public void initializeOnBirth(Point position, MineSweeperDirection direction, long currentIteration) {
-        lastMineHitIteration = currentIteration - settings.getDigestionPeriod();
-        lastMineHitWasExplosion = false;
+
+        this.fitnessState = new MineSweeperFitnessState(currentIteration);
 
         this.position = position;
         this.direction = direction;
@@ -70,15 +66,14 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
     }
 
     public double getFitness() {
-        return fitness;
+        return fitnessState.getFitness();
     }
 
     public void update(long currentIteration) {
 
-        if (!isDigesting(currentIteration)) {
+        if (!fitnessState.isDigesting(settings, currentIteration)) {
 
             double minAngle = -visionConeHalfAngle;
-            double maxAngle = visionConeHalfAngle;
 
             double degreesPerDivision = (settings.visionConeDivisions == 1)
                     ? settings.visionConeAngle
@@ -97,10 +92,6 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
 
                 double endAngle = startAngle + degreesPerDivision;
                 double angleOffset = (endAngle + startAngle) / 2.0;
-
-                //Trace.WriteLine(MathUtility.ToDegrees(startAngle));
-                //Trace.WriteLine(MathUtility.ToDegrees(endAngle));
-                //Trace.WriteLine(MathUtility.ToDegrees(angleOffset));
 
                 List<MineStatus> curClosestMines = getClosestVisibleMines(
                         position,
@@ -189,28 +180,11 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
     }
 
     public void onMineHit(long currentIteration, boolean explodeyMine) {
-        lastMineHitIteration = currentIteration;
-
-        if (explodeyMine) {
-            // TODO: make this a setting
-            fitness = fitness - 1.0;
-            lastMineHitWasExplosion = true;
-        } else {
-            // TODO: make this a setting
-            fitness = fitness + 1.0;
-            lastMineHitWasExplosion = false;
-        }
+        fitnessState.onMineHit(settings, currentIteration, explodeyMine);
     }
 
     public void onMineNotHit(long currentIteration) {
-        if (isStarving(currentIteration)) {
-            // TODO: make this a setting
-            fitness = fitness - 0.5;
-
-            // TODO: do this better, it's a hacky way of resetting the starvation
-            lastMineHitIteration = currentIteration - settings.getDigestionPeriod();
-            lastMineHitWasExplosion = false;
-        }
+        fitnessState.onMineNotHit(settings, currentIteration);
     }
 
     public boolean isVisible(Point location) {
@@ -228,7 +202,7 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
 
     @Override
     public double getValue() {
-        return fitness;
+        return getFitness();
     }
 
     private void randomizePositionAndDirection(RandomGenerator random, Size minefieldSize) {
@@ -340,47 +314,6 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
         double angle = MathFunctions.wrapAngle(Math.atan2(organismToLocation.y, organismToLocation.x));
 
         return new IsVisibleResult(true, distance, distanceToMineSquared, angle);
-
-
-        //organismAngle = MathUtility.WrapAngle(organismAngle);
-        //
-        //// TODO: this gets computed multiple times
-        //Vector organismToLocation = location - organismPosition;
-        //double distanceToMineSquared = organismToLocation.LengthSquared;
-        //
-        //if (distanceToMineSquared > coneDistanceSquared)
-        //{
-        //	distance = 0.0;
-        //	distanceSquared = 0.0;
-        //	angle = 0.0;
-        //	return false;
-        //}
-        //
-        //double angleToLocation = MathUtility.WrapAngle(Math.Atan2(organismToLocation.Y, organismToLocation.X));
-        //
-        //double minAngle = organismAngle + coneAngleOffset - coneHalfAngle;
-        //double maxAngle = organismAngle + coneAngleOffset + coneHalfAngle;
-        //
-        //if (angleToLocation < minAngle)
-        //{
-        //	distance = 0.0;
-        //	distanceSquared = 0.0;
-        //	angle = 0.0;
-        //	return false;
-        //}
-        //
-        //if (angleToLocation > maxAngle)
-        //{
-        //	distance = 0.0;
-        //	distanceSquared = 0.0;
-        //	angle = 0.0;
-        //	return false;
-        //}
-        //
-        //distance = organismToLocation.Length;
-        //distanceSquared = distanceToMineSquared;
-        //angle = angleToLocation;
-        //return true;
     }
 
     private static double getMineScore(Mine mine,
@@ -414,42 +347,6 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
 
 
         return score;
-    }
-
-    private boolean isStarving(long currentIteration) {
-
-        if (settings.getStarvationPeriod() >= 0) {
-
-            if (!isDigesting(currentIteration)) {
-
-                if (lastMineHitWasExplosion) {
-                    return true;
-                }
-
-                if ((lastMineHitIteration + settings.getStarvationPeriod()) < currentIteration) {
-                    return true;
-                }
-            }
-
-        }
-
-        return false;
-    }
-
-    private boolean isDigesting(long currentIteration) {
-
-        int digestionPeriod = settings.getDigestionPeriod();
-        //if (lastMineHitWasExplosion)
-        //{
-        //	// TODO: pass this factor in
-        //	digestionPeriod *= 2;
-        //}
-
-        if ((lastMineHitIteration + digestionPeriod) < currentIteration) {
-            return false;
-        }
-
-        return true;
     }
 
     private static double computeSpeed(double rawSpeed,

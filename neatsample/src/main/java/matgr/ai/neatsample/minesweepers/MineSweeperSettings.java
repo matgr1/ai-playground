@@ -36,9 +36,12 @@ public class MineSweeperSettings {
 
     public final int iterationsPerGeneration = 1000;//4000;//1000;//4000;
     public final double starvationPeriodFraction = 5 / 100.0;
+    public final double starvationSteepness = 0.5;
 
-    public int getStarvationPeriod() {
-        return (int) Math.round(iterationsPerGeneration * starvationPeriodFraction);
+    public final double maxStarvationFitnessAdjustment = -1.0;
+
+    public double getStarvationPeriod() {
+        return iterationsPerGeneration * starvationPeriodFraction;
     }
 
     public final int populationCount = 200 * 3;
