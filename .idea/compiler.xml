@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="common" />
+        <module name="genetic" />
+        <module name="math" />
+        <module name="neat" />
+        <module name="neat-sample" />
+        <module name="neatsample" />
+        <module name="neuralnet" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="ai" target="1.8" />
+      <module name="common" target="1.8" />
+      <module name="genetic" target="1.8" />
+      <module name="math" target="1.8" />
+      <module name="neat" target="1.8" />
+      <module name="neat-sample" target="1.8" />
+      <module name="neatsample" target="1.8" />
+      <module name="neuralnet" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

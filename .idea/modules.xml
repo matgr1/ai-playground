@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/ai.iml" filepath="$PROJECT_DIR$/ai.iml" />
+      <module fileurl="file://$PROJECT_DIR$/common/common.iml" filepath="$PROJECT_DIR$/common/common.iml" />
+      <module fileurl="file://$PROJECT_DIR$/genetic/genetic.iml" filepath="$PROJECT_DIR$/genetic/genetic.iml" />
+      <module fileurl="file://$PROJECT_DIR$/math/math.iml" filepath="$PROJECT_DIR$/math/math.iml" />
+      <module fileurl="file://$PROJECT_DIR$/neat/neat.iml" filepath="$PROJECT_DIR$/neat/neat.iml" />
+      <module fileurl="file://$PROJECT_DIR$/neatsample/neatsample.iml" filepath="$PROJECT_DIR$/neatsample/neatsample.iml" />
+      <module fileurl="file://$PROJECT_DIR$/neuralnet/neuralnet.iml" filepath="$PROJECT_DIR$/neuralnet/neuralnet.iml" />
+    </modules>
+  </component>
+</project>

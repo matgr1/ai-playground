@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.Group?>
+<?import javafx.scene.layout.*?>
+<?import matgr.ai.neatsample.NonResizableSwingNode?>
+<?import matgr.ai.neatsample.ResizableCanvas?>
+
+<GridPane minHeight="0.0" minWidth="0.0" prefHeight="400.0" prefWidth="600.0"
+          xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1"
+          fx:controller="matgr.ai.neatsample.AppController">
+
+    <columnConstraints>
+        <ColumnConstraints hgrow="NEVER" percentWidth="30"/>
+        <ColumnConstraints hgrow="ALWAYS"/>
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints vgrow="ALWAYS"/>
+    </rowConstraints>
+
+    <VBox GridPane.columnIndex="0">
+
+        <HBox>
+            <Label text="Zoom: "/>
+            <Slider fx:id="graphZoomSlider" min="0.1" max="2.0" value="1.0" majorTickUnit="0.1" minorTickCount="10"
+                    showTickMarks="true" snapToTicks="true"/>
+        </HBox>
+
+        <AnchorPane fx:id="graphContainerContainer" VBox.vgrow="ALWAYS">
+            <Group autoSizeChildren="false" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0"
+                   AnchorPane.bottomAnchor="0"
+                   AnchorPane.topAnchor="0">
+                <NonResizableSwingNode fx:id="graphContainer"/>
+            </Group>
+        </AnchorPane>
+    </VBox>
+
+    <GridPane GridPane.columnIndex="1">
+
+        <columnConstraints>
+            <ColumnConstraints hgrow="ALWAYS"/>
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints vgrow="NEVER"/>
+            <RowConstraints vgrow="ALWAYS"/>
+            <RowConstraints vgrow="NEVER"/>
+        </rowConstraints>
+
+        <HBox GridPane.rowIndex="0">
+
+            <VBox>
+
+                <HBox>
+                    <CheckBox fx:id="manualSpeciesCheckBox" text="Select Species"/>
+                    <Slider fx:id="manualSpeciesSlider"
+                            max="${controller.combinedStats.maxSpeciesIndex}"
+                            majorTickUnit="1" minorTickCount="0" showTickMarks="true" snapToTicks="true"/>
+                </HBox>
+
+                <CheckBox fx:id="pauseEvolutionCheckBox" onAction="#onPauseEvolutionChecked" text="Pause Evolution"/>
+            </VBox>
+
+            <GridPane HBox.hgrow="ALWAYS">
+
+                <columnConstraints>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints vgrow="NEVER"/>
+                    <RowConstraints vgrow="NEVER"/>
+                </rowConstraints>
+
+                <HBox GridPane.rowIndex="0" GridPane.columnIndex="0">
+                    <Label text="Iteration: "/>
+                    <Label text="${controller.combinedStats.iteration}"/>
+                </HBox>
+
+                <HBox GridPane.rowIndex="0" GridPane.columnIndex="1">
+                    <Label text="Generation: "/>
+                    <Label text="${controller.combinedStats.generation}"/>
+                </HBox>
+
+                <HBox GridPane.rowIndex="0" GridPane.columnIndex="2">
+                    <Label text="Generation Iteration: "/>
+                    <Label text="${controller.combinedStats.generationIteration}"/>
+                </HBox>
+
+                <HBox GridPane.rowIndex="0" GridPane.columnIndex="3">
+                    <Label text="Species: "/>
+                    <Label text="${controller.selectedSpeciesIndex}"/>
+                </HBox>
+
+                <HBox GridPane.rowIndex="1" GridPane.columnIndex="0">
+                    <Label text="Fitness: "/>
+                    <Label text="${controller.stats.fitness}"/>
+                </HBox>
+
+                <HBox GridPane.rowIndex="1" GridPane.columnIndex="1">
+                    <Label text="Cleared: "/>
+                    <Label text="${controller.stats.cleared}"/>
+                </HBox>
+
+                <HBox GridPane.rowIndex="1" GridPane.columnIndex="2">
+                    <Label text="Exploded: "/>
+                    <Label text="${controller.stats.explosions}"/>
+                </HBox>
+
+            </GridPane>
+
+        </HBox>
+
+        <Pane fx:id="mainCanvasContainer" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0"
+              AnchorPane.rightAnchor="0"
+              AnchorPane.topAnchor="0" GridPane.rowIndex="1">
+
+            <ResizableCanvas fx:id="mainCanvas" height="${mainCanvasContainer.height}"
+                             width="${mainCanvasContainer.width}"/>
+
+        </Pane>
+
+        <HBox GridPane.rowIndex="2">
+            <HBox HBox.hgrow="ALWAYS"/>
+            <Label text="${controller.fps}"/>
+        </HBox>
+    </GridPane>
+</GridPane>
