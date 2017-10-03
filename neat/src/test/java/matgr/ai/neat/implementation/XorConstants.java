@@ -46,6 +46,7 @@ public class XorConstants {
     public static final double neatRemoveConnectionProbability = 9.0;
     public static final double neatMutateWeightProbability = 70.0;
 
+    public static final int initialClusterCount = 10;
     public static final double speciationExcessFactor = 1.0;
     public static final double speciationDisjointFactor = 1.0;
     public static final double speciationWeightFactor = 0.4;

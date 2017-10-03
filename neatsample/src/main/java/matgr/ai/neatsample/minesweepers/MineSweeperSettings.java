@@ -84,6 +84,7 @@ public class MineSweeperSettings {
     public final double sexualReproductionProportion = 0.75;
     public final double interSpeciesSexualReproductionProportion = 0.1;
 
+    public static final int initialClusterCount = 10;
     public final double speciationExcessFactor = 1.0;
     public final double speciationDisjointFactor = 1.0;
     public final double speciationWeightFactor = 0.4;
@@ -209,6 +210,7 @@ public class MineSweeperSettings {
         return new KMedoidsSpeciationStrategy(
                 speciationExcessFactor,
                 speciationDisjointFactor,
-                speciationWeightFactor);
+                speciationWeightFactor,
+                initialClusterCount);
     }
 }

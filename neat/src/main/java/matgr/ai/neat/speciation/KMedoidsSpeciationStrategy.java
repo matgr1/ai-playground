@@ -11,8 +11,15 @@ import java.util.List;
 
 public class KMedoidsSpeciationStrategy extends SpeciationStrategy {
 
-    public KMedoidsSpeciationStrategy(double excessFactor, double disjointFactor, double weightFactor) {
+    public final int initialClusterCount;
+
+    public KMedoidsSpeciationStrategy(double excessFactor,
+                                      double disjointFactor,
+                                      double weightFactor,
+                                      int initialClusterCount) {
+
         super(excessFactor, disjointFactor, weightFactor);
+        this.initialClusterCount = initialClusterCount;
     }
 
     @Override
@@ -33,9 +40,6 @@ public class KMedoidsSpeciationStrategy extends SpeciationStrategy {
             List<List<SpeciesMemberT>> initialClusters = groupByPreviousRepresentatives(members, previousPopulation);
             return clusteringAlgorithm.refine(initialClusters);
         }
-
-        // TODO: pass this in
-        final int initialClusterCount = 10;
 
         return clusteringAlgorithm.compute(members, initialClusterCount);
     }

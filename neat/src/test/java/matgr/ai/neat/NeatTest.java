@@ -75,7 +75,8 @@ public class NeatTest extends TestCase {
         SpeciationStrategy speciationStrategy = new KMedoidsSpeciationStrategy(
                 XorConstants.speciationExcessFactor,
                 XorConstants.speciationDisjointFactor,
-                XorConstants.speciationWeightFactor);
+                XorConstants.speciationWeightFactor,
+                XorConstants.initialClusterCount);
 
         geneticAlgorithm = new XorNeatGeneticAlgorithm(
                 random,

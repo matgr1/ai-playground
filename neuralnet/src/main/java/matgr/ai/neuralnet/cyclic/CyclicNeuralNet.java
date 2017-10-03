@@ -7,7 +7,6 @@ import matgr.ai.neuralnet.activation.ActivationFunction;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Spliterators;
 
 public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neuron> {
 
