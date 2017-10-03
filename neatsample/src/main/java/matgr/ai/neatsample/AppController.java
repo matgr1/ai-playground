@@ -19,7 +19,6 @@ import matgr.ai.common.NestedIterator;
 import matgr.ai.genetic.EvolutionContext;
 import matgr.ai.genetic.PopulationFitnessSnapshot;
 import matgr.ai.genetic.Species;
-import matgr.ai.neat.NeatNeuralNet;
 import matgr.ai.neatsample.minesweepers.MineField;
 import matgr.ai.neatsample.minesweepers.MineSweeperSettings;
 import matgr.ai.neatsample.neat.NeatMineSweeper;
@@ -29,7 +28,6 @@ import matgr.ai.neatsample.neat.NeatMineSweeperSpecies;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 
-import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -122,11 +120,8 @@ public class AppController {
     }
 
     private final RandomGenerator random;
-
     private final MineSweeperSettings settings;
-
     private final NeatMineSweeperGeneticAlgorithm geneticAlgorithm;
-
     private final EvolutionContext evolutionContext;
 
     private final NeuralNetGrapher grapher;
@@ -146,9 +141,22 @@ public class AppController {
 
     private UUID bestSweeperGenomeId;
 
+    // TODO: clean up synchronization stuff...
+    private final Object statsLock;
+
+    private CombinedMineSweeperStats writableCombinedStats;
+    private Map<UUID, MineSweeperStatsItem> writableAllStats;
+
+    private CombinedMineSweeperStats combinedStatsToSet;
+    private Map<UUID, MineSweeperStatsItem> allStatsToSet;
+
     private Map<UUID, MineSweeperStatsItem> allStats;
 
+    private boolean settingStats;
+
     public AppController() {
+
+        statsLock = new Object();
 
         random = new MersenneTwister();
         settings = new MineSweeperSettings();
@@ -159,9 +167,6 @@ public class AppController {
 
         grapher = new NeuralNetGrapher();
 
-        setCombinedStats(new CombinedMineSweeperStats());
-        setStats(new MineSweeperStatsItem());
-
         population = geneticAlgorithm.createRandomPopulation(
                 evolutionContext,
                 settings.populationCount,
@@ -169,9 +174,19 @@ public class AppController {
                 settings.mineSweeperOutputCount,
                 settings.activationResponse);
 
+        setCombinedStats(new CombinedMineSweeperStats());
+        setStats(new MineSweeperStatsItem());
+
+        writableCombinedStats = new CombinedMineSweeperStats();
+
+        writableAllStats = new HashMap<>();
+        for (NeatMineSweeperSpecies species : population.species()) {
+            for (NeatMineSweeper member : species.members()) {
+                writableAllStats.put(member.genome().genomeId(), new MineSweeperStatsItem());
+            }
+        }
 
         allStats = new HashMap<>();
-
         for (NeatMineSweeperSpecies species : population.species()) {
             for (NeatMineSweeper member : species.members()) {
                 allStats.put(member.genome().genomeId(), new MineSweeperStatsItem());
@@ -258,9 +273,12 @@ public class AppController {
 
         }
 
-        setStats(allStats.get(sweeper.genome.genomeId()));
+        long iteration = getCombinedStats().getIteration();
 
-        MineSweeperScene.draw(mainCanvasSize, mainCanvasGraphics, sweeper, settings, getCombinedStats().getIteration());
+        MineSweeperStatsItem stats = allStats.get(sweeper.genome.genomeId());
+        setStats(stats);
+
+        MineSweeperScene.draw(mainCanvasSize, mainCanvasGraphics, sweeper, settings, iteration);
 
         Dimension size = new Dimension(
                 (int) Math.floor(graphContainerContainer.getWidth()),
@@ -269,7 +287,6 @@ public class AppController {
         graphContainer.resize(size.width, size.height);
         grapher.renderTo(graphContainer, size, graphZoomSlider.getValue(), sweeper.genome.neuralNet);
     }
-
 
     private void updateLoop() {
 
@@ -296,11 +313,9 @@ public class AppController {
 
     private void update() {
 
-        CombinedMineSweeperStats combinedStats = getCombinedStats();
-
         if (!pauseEvolution) {
 
-            if (getCombinedStats().getGenerationIteration() > settings.iterationsPerGeneration) {
+            if (writableCombinedStats.getGenerationIteration() > settings.iterationsPerGeneration) {
 
                 bestSweeperGenomeId = null;
 
@@ -314,22 +329,22 @@ public class AppController {
                     NeatMineSweeper oldSweeper = oldMembers.next();
                     NeatMineSweeper newSweeper = newMembers.next();
 
-                    newSweeper.initializeOnBirth(oldSweeper.getPosition(), oldSweeper.getDirection(), combinedStats.getIteration());
+                    newSweeper.initializeOnBirth(
+                            oldSweeper.getPosition(),
+                            oldSweeper.getDirection(),
+                            writableCombinedStats.getIteration());
                 }
 
-                Platform.runLater(() ->
-                {
-                    combinedStats.setGeneration(combinedStats.getGeneration() + 1);
-                    combinedStats.setGenerationIteration(0L);
-                    combinedStats.getCurrentGeneration().setExplosions(0);
-                    combinedStats.getCurrentGeneration().setExplosions(0);
-                });
+                writableCombinedStats.setGeneration(writableCombinedStats.getGeneration() + 1);
+                writableCombinedStats.setGenerationIteration(0L);
+                writableCombinedStats.getCurrentGeneration().setExplosions(0);
+                writableCombinedStats.getCurrentGeneration().setExplosions(0);
 
-                allStats = new HashMap<>();
+                writableAllStats = new HashMap<>();
 
                 for (NeatMineSweeperSpecies species : population.species()) {
                     for (NeatMineSweeper member : species.members()) {
-                        allStats.put(member.genome().genomeId(), new MineSweeperStatsItem());
+                        writableAllStats.put(member.genome().genomeId(), new MineSweeperStatsItem());
                     }
                 }
             }
@@ -342,7 +357,7 @@ public class AppController {
         //}
 
         // update population
-        long iteration = combinedStats.getIteration();
+        long iteration = writableCombinedStats.getIteration();
 
         List<CompletableFuture> futures = new ArrayList<>();
 
@@ -392,68 +407,90 @@ public class AppController {
                 // TODO: this is a little weird (that the mine sweeper contains it's minefield...)
                 MineField mineField = mineSweeper.getMineField();
 
-                MineSweeperStatsItem curItem = allStats.get(mineSweeper.genome.genomeId());
+                MineSweeperStatsItem curStatsItem = writableAllStats.get(mineSweeper.genome.genomeId());
 
-                int explodeyMineIndex = mineField.isExplodeyHit(combinedStats.getIteration(), settings, mineSweeper.getPosition());
+                int explodeyMineIndex = mineField.isExplodeyHit(writableCombinedStats.getIteration(), settings, mineSweeper.getPosition());
 
                 if (explodeyMineIndex >= 0) {
 
-                    mineField.replaceExplodeyMine(random, explodeyMineIndex, combinedStats.getIteration());
-                    mineSweeper.onMineHit(combinedStats.getIteration(), true);
+                    mineField.replaceExplodeyMine(random, explodeyMineIndex, writableCombinedStats.getIteration());
+                    mineSweeper.onMineHit(writableCombinedStats.getIteration(), true);
 
                     currentExplosions++;
-                    Platform.runLater(() -> curItem.setExplosions(curItem.getExplosions() + 1));
+                    curStatsItem.setExplosions(curStatsItem.getExplosions() + 1);
 
                 } else {
 
-                    int mineIndex = mineField.isHit(combinedStats.getIteration(), settings, mineSweeper.getPosition());
+                    int mineIndex = mineField.isHit(writableCombinedStats.getIteration(), settings, mineSweeper.getPosition());
 
                     if (mineIndex >= 0) {
 
-                        mineSweeper.onMineHit(combinedStats.getIteration(), false);
-                        mineField.replaceMine(random, mineIndex, combinedStats.getIteration());
+                        mineSweeper.onMineHit(writableCombinedStats.getIteration(), false);
+                        mineField.replaceMine(random, mineIndex, writableCombinedStats.getIteration());
 
                         currentMinesCleared++;
-                        Platform.runLater(() -> curItem.setCleared(curItem.getCleared() + 1));
+                        curStatsItem.setCleared(curStatsItem.getCleared() + 1);
 
                     } else {
 
-                        mineSweeper.onMineNotHit(combinedStats.getIteration());
+                        mineSweeper.onMineNotHit(writableCombinedStats.getIteration());
                     }
                 }
 
-                Platform.runLater(() -> curItem.setFitness(mineSweeper.getFitness()));
+                curStatsItem.setFitness(mineSweeper.getFitness());
 
                 // TODO: these don't make sense until prev species can be correlated with new species...
-                //curItem.setExplosionsPerIteration(curItem.getTotals().getExplosions() / (double) curItem.getIteration());
-                //curItem.setMinesClearedPerIteration(curItem.getTotals().getCleared() / (double) curItem.getIteration());
+                //curStatsItem.setExplosionsPerIteration(curStatsItem.getTotals().getExplosions() / (double) curStatsItem.getIteration());
+                //curStatsItem.setMinesClearedPerIteration(curStatsItem.getTotals().getCleared() / (double) curStatsItem.getIteration());
             }
         }
 
         // TODO: this is messy... clean it up
-        int[] currentExplosionsArray = new int[1];
-        currentExplosionsArray[0] = currentExplosions;
-        int[] currentMinesClearedArray = new int[1];
-        currentMinesClearedArray[0] = currentMinesCleared;
-        Platform.runLater(() ->
-        {
-            combinedStats.setIteration(combinedStats.getIteration() + 1);
-            combinedStats.setGenerationIteration(combinedStats.getGenerationIteration() + 1);
+        writableCombinedStats.setIteration(writableCombinedStats.getIteration() + 1);
+        writableCombinedStats.setGenerationIteration(writableCombinedStats.getGenerationIteration() + 1);
 
-            combinedStats.getTotals().setExplosions(combinedStats.getTotals().getExplosions() + currentExplosionsArray[0]);
-            combinedStats.getCurrentGeneration().setExplosions(combinedStats.getCurrentGeneration().getExplosions() + currentExplosionsArray[0]);
+        writableCombinedStats.getTotals().setExplosions(writableCombinedStats.getTotals().getExplosions() + currentExplosions);
+        writableCombinedStats.getCurrentGeneration().setExplosions(writableCombinedStats.getCurrentGeneration().getExplosions() + currentExplosions);
 
-            combinedStats.getTotals().setCleared(combinedStats.getTotals().getCleared() + currentMinesClearedArray[0]);
-            combinedStats.getCurrentGeneration().setCleared(combinedStats.getCurrentGeneration().getCleared() + currentMinesClearedArray[0]);
+        writableCombinedStats.getTotals().setCleared(writableCombinedStats.getTotals().getCleared() + currentMinesCleared);
+        writableCombinedStats.getCurrentGeneration().setCleared(writableCombinedStats.getCurrentGeneration().getCleared() + currentMinesCleared);
 
-            combinedStats.getTotals().setExplosionsPerIteration(combinedStats.getTotals().getExplosions() / (double) combinedStats.getIteration());
-            combinedStats.getCurrentGeneration().setExplosionsPerIteration(combinedStats.getCurrentGeneration().getExplosions() / (double) combinedStats.getGenerationIteration());
+        writableCombinedStats.getTotals().setExplosionsPerIteration(writableCombinedStats.getTotals().getExplosions() / (double) writableCombinedStats.getIteration());
+        writableCombinedStats.getCurrentGeneration().setExplosionsPerIteration(writableCombinedStats.getCurrentGeneration().getExplosions() / (double) writableCombinedStats.getGenerationIteration());
 
-            combinedStats.getTotals().setMinesClearedPerIteration(combinedStats.getTotals().getCleared() / (double) combinedStats.getIteration());
-            combinedStats.getCurrentGeneration().setMinesClearedPerIteration(combinedStats.getCurrentGeneration().getCleared() / (double) combinedStats.getGenerationIteration());
+        writableCombinedStats.getTotals().setMinesClearedPerIteration(writableCombinedStats.getTotals().getCleared() / (double) writableCombinedStats.getIteration());
+        writableCombinedStats.getCurrentGeneration().setMinesClearedPerIteration(writableCombinedStats.getCurrentGeneration().getCleared() / (double) writableCombinedStats.getGenerationIteration());
 
-            combinedStats.setSpeciesCount(fitnessSnapshot.getSpeciesCount());
-        });
+        writableCombinedStats.setSpeciesCount(fitnessSnapshot.getSpeciesCount());
+
+        // NOTE: this is probably a little unclear... acquiring the lock later (within the runLater callback)
+        //       should be fine since that runs on a different thread...
+        // TODO: this is kinda messy, find a better way...
+        synchronized (statsLock) {
+
+            combinedStatsToSet = writableCombinedStats.clone();
+
+            allStatsToSet = new HashMap<>();
+            for (Map.Entry<UUID, MineSweeperStatsItem> entry : writableAllStats.entrySet()) {
+                allStatsToSet.put(entry.getKey(), entry.getValue().clone());
+            }
+
+            if (!settingStats) {
+
+                settingStats = true;
+
+                Platform.runLater(() -> {
+
+                    synchronized (statsLock) {
+
+                        setCombinedStats(combinedStatsToSet);
+                        allStats = allStatsToSet;
+
+                        settingStats = false;
+                    }
+                });
+            }
+        }
     }
 
     private void checkInUpdateExecutor() {

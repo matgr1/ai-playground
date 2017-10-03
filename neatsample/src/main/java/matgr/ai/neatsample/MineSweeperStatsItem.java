@@ -5,7 +5,7 @@ import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
-public class MineSweeperStatsItem {
+public class MineSweeperStatsItem implements Cloneable {
 
     private IntegerProperty explosions = new SimpleIntegerProperty();
     public Integer getExplosions() {
@@ -60,5 +60,35 @@ public class MineSweeperStatsItem {
     }
     public DoubleProperty fitnessProperty() {
         return fitness;
+    }
+
+    public MineSweeperStatsItem(){
+        this(0, 0, 0, 0, 0);
+    }
+
+    public MineSweeperStatsItem(MineSweeperStatsItem other){
+        this(
+                other.getExplosions(),
+                other.getCleared(),
+                other.getExplosionsPerIteration(),
+                other.getMinesClearedPerIteration(),
+                other.getFitness());
+    }
+
+    public MineSweeperStatsItem(int explosions,
+                                int cleared,
+                                double explosionsPerIteration,
+                                double minesClearedPerIteration,
+                                double fitness){
+        setExplosions(explosions);
+        setCleared(cleared);
+        setExplosionsPerIteration(explosionsPerIteration);
+        setMinesClearedPerIteration(minesClearedPerIteration);
+        setFitness(fitness);
+    }
+
+    @Override
+    public MineSweeperStatsItem clone(){
+        return new MineSweeperStatsItem(this);
     }
 }

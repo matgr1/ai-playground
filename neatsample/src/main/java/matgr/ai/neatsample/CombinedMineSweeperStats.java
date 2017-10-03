@@ -9,7 +9,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
 
-public class CombinedMineSweeperStats {
+public class CombinedMineSweeperStats implements Cloneable {
 
     private ReadOnlyObjectWrapper<MineSweeperStatsItem> totals = new ReadOnlyObjectWrapper<>();
     public final MineSweeperStatsItem getTotals() {
@@ -90,9 +90,46 @@ public class CombinedMineSweeperStats {
     }
 
     public CombinedMineSweeperStats() {
-        setTotals(new MineSweeperStatsItem());
-        setCurrentGeneration(new MineSweeperStatsItem());
+        this(
+                new MineSweeperStatsItem(),
+                new MineSweeperStatsItem(),
+                0,
+                0,
+                0,
+                0,
+                0);
     }
 
+    public CombinedMineSweeperStats(CombinedMineSweeperStats other) {
+        this(
+                other.getTotals().clone(),
+                other.getCurrentGeneration().clone(),
+                other.getGeneration(),
+                other.getIteration(),
+                other.getGenerationIteration(),
+                other.getSpeciesCount(),
+                other.getMaxSpeciesIndex());
+    }
 
+    public CombinedMineSweeperStats(MineSweeperStatsItem totals,
+                                    MineSweeperStatsItem currentGeneration,
+                                    long generation,
+                                    long iteration,
+                                    long generationIteration,
+                                    int speciesCount,
+                                    int maxSpeciesIndex) {
+
+        setTotals(totals);
+        setCurrentGeneration(currentGeneration);
+        setGeneration(generation);
+        setIteration(iteration);
+        setGenerationIteration(generationIteration);
+        setSpeciesCount(speciesCount);
+        setMaxSpeciesIndex(maxSpeciesIndex);
+    }
+
+    @Override
+    public CombinedMineSweeperStats clone() {
+        return new CombinedMineSweeperStats(this);
+    }
 }
