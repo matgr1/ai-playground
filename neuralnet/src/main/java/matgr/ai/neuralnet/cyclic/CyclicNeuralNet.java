@@ -22,7 +22,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
     public CyclicNeuralNet(NeuronFactory<NeuronT> neuronFactory,
                            ConnectionFactory<ConnectionT> connectionFactory,
                            int inputCount,
-                           Iterable<? extends ActivatableNeuronParameters> outputNeuronsParameters) {
+                           Iterable<OutputNeuronParameters> outputNeuronsParameters) {
 
         this(neuronFactory, connectionFactory);
 
@@ -39,7 +39,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
             writableNeurons.addNeuron(inputNeuron);
         }
 
-        for (ActivatableNeuronParameters parameters : outputNeuronsParameters) {
+        for (OutputNeuronParameters parameters : outputNeuronsParameters) {
 
             NeuronT outputNeuron = neuronFactory.createOutput(
                     writableNeurons.getNextFreeNeuronId(),

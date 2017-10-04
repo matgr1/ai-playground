@@ -1,15 +1,14 @@
 package matgr.ai.neat.crossover;
 
-import matgr.ai.neat.NeatConnection;
-import matgr.ai.neat.NeatGenome;
 import matgr.ai.genetic.FitnessItem;
 import matgr.ai.genetic.GenomeParents;
 import matgr.ai.genetic.SortedGenomeParents;
 import matgr.ai.genetic.crossover.CrossoverFunctions;
 import matgr.ai.math.RandomFunctions;
+import matgr.ai.neat.NeatConnection;
+import matgr.ai.neat.NeatGenome;
 import matgr.ai.neat.NeatNeuralNet;
 import matgr.ai.neuralnet.cyclic.Neuron;
-import matgr.ai.neuralnet.cyclic.NeuronType;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.SortedMap;
@@ -21,7 +20,7 @@ public final class NeatCrossoverFunctions {
 
     @FunctionalInterface
     public interface CreateNeatGenome<NeatGenomeT> {
-        NeatGenomeT create(int inputCount, int outputCount, double activationResponse);
+        NeatGenomeT create(NeatGenomeT template);
     }
 
     // TODO: crossover/mutate activation functions/any other parameters of the nodes?
@@ -32,13 +31,7 @@ public final class NeatCrossoverFunctions {
 
         SortedGenomeParents<NeatGenomeT> sortedParents = parents.getSorted(random);
 
-        int inputCount = sortedParents.fittest.item.neuralNet.neurons.count(NeuronType.Input);
-        int outputCount = sortedParents.fittest.item.neuralNet.neurons.count(NeuronType.Output);
-
-        NeatGenomeT child = createGenome.<NeatGenomeT>create(
-                inputCount,
-                outputCount,
-                sortedParents.fittest.item.activationResponse);
+        NeatGenomeT child = createGenome.<NeatGenomeT>create(sortedParents.fittest.item);
 
         SortedMap<Long, GenomeParents<GenomeAndConnection<NeatGenomeT>>> correlatedConnections = correlateConnections(
                 sortedParents.fittest,

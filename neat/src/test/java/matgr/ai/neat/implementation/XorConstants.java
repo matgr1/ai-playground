@@ -9,7 +9,6 @@ public class XorConstants {
     public static final double successFitnessThreshold = 0.9;
 
     public static final double bias = -1;
-    public static final double activationResponse = 4.9;
 
     public static final int maxStepsPerActivation = 10;
     public static final boolean resetStateBeforeActivation = true;

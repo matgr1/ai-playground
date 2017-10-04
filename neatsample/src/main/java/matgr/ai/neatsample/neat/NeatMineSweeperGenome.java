@@ -13,17 +13,8 @@ public class NeatMineSweeperGenome extends NeatGenome implements MineSweeperGeno
 
     public NeatMineSweeperGenome(MineField mineField,
                                  int inputCount,
-                                 int outputCount,
-                                 double activationResponse) {
-        super(inputCount, outputCount, activationResponse);
-        this.mineField = mineField;
-    }
-
-    public NeatMineSweeperGenome(MineField mineField,
-                                 int inputCount,
-                                 Iterable<OutputNeuronParameters> outputNodesParameters,
-                                 double activationResponse) {
-        super(inputCount, outputNodesParameters, activationResponse);
+                                 Iterable<OutputNeuronParameters> outputNodesParameters) {
+        super(inputCount, outputNodesParameters);
         this.mineField = mineField;
     }
 

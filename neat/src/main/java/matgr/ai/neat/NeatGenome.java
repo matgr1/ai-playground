@@ -1,7 +1,6 @@
 package matgr.ai.neat;
 
 import matgr.ai.genetic.Genome;
-import matgr.ai.neuralnet.activation.DefaultActivationFunctions;
 import matgr.ai.neuralnet.cyclic.*;
 
 import java.util.UUID;
@@ -14,41 +13,25 @@ public class NeatGenome implements Genome {
 
     protected UUID genomeId;
 
-    // TODO: don't expose this
+    // TODO: don't expose this?
     public final NeatNeuralNet neuralNet;
 
-    // TODO: delete
-    public final double activationResponse;
-
-    public NeatGenome(int inputCount, int outputCount, double activationResponse) {
-        this(
-                inputCount,
-                DefaultActivationFunctions.createOutputNeuronParameters(outputCount, activationResponse),
-                activationResponse);
-    }
-
     public NeatGenome(int inputCount,
-                      Iterable<OutputNeuronParameters> outputNodesParameters,
-                      double activationResponse) {
+                      Iterable<OutputNeuronParameters> outputNodesParameters) {
 
         this(
                 new NeatNeuralNet(inputCount, outputNodesParameters),
-                UUID.randomUUID(),
-                activationResponse);
+                UUID.randomUUID());
     }
 
     public NeatGenome(NeatGenome other) {
-        this(CyclicNeuralNet.deepClone(other.neuralNet), other.genomeId, other.activationResponse);
+        this(CyclicNeuralNet.deepClone(other.neuralNet), other.genomeId);
     }
 
-    private NeatGenome(
-            NeatNeuralNet neuralNet,
-            UUID genomeId,
-            double activationResponse) {
+    private NeatGenome(NeatNeuralNet neuralNet, UUID genomeId) {
 
         this.neuralNet = neuralNet;
         this.genomeId = genomeId;
-        this.activationResponse = activationResponse;
     }
 
     @Override

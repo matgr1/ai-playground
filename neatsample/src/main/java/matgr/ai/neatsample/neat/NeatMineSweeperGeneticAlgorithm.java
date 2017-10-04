@@ -3,10 +3,17 @@ package matgr.ai.neatsample.neat;
 import matgr.ai.genetic.EvolutionContext;
 import matgr.ai.math.clustering.Cluster;
 import matgr.ai.neat.NeatGeneticAlgorithm;
+import matgr.ai.neat.NeatGenome;
+import matgr.ai.neat.mutation.NeatMutationFunctions;
 import matgr.ai.neatsample.minesweepers.MineField;
 import matgr.ai.neatsample.minesweepers.MineSweeperSettings;
+import matgr.ai.neuralnet.activation.ActivationFunction;
+import matgr.ai.neuralnet.cyclic.Neuron;
+import matgr.ai.neuralnet.cyclic.NeuronType;
+import matgr.ai.neuralnet.cyclic.OutputNeuronParameters;
 import org.apache.commons.math3.random.RandomGenerator;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class NeatMineSweeperGeneticAlgorithm extends NeatGeneticAlgorithm<
@@ -50,10 +57,47 @@ public class NeatMineSweeperGeneticAlgorithm extends NeatGeneticAlgorithm<
     }
 
     @Override
-    protected NeatMineSweeperGenome createNewGenome(int inputCount, int outputCount, double activationResponse) {
+    protected NeatMineSweeperGenome createNewGenomeFromTemplate(NeatMineSweeperGenome template) {
+
+        int inputCount = template.neuralNet.neurons.count(NeuronType.Input);
+        Iterable<Neuron> outputNeurons = template.neuralNet.neurons.values(NeuronType.Output);
+
+        List<OutputNeuronParameters> outputParameters = new ArrayList<>();
+
+        for (Neuron outputNeuron : outputNeurons) {
+
+            ActivationFunction activationFunction = outputNeuron.getActivationFunction();
+            double[] activationFunctionParameters = outputNeuron.getActivationFunctionParameters();
+
+            OutputNeuronParameters parameters = new OutputNeuronParameters(
+                    activationFunction,
+                    activationFunctionParameters);
+
+            outputParameters.add(parameters);
+        }
+
+        // TODO: clone the minefield from the template?
         MineField mineField = new MineField(random, settings);
-        return new NeatMineSweeperGenome(mineField, inputCount, outputCount, activationResponse);
+        return new NeatMineSweeperGenome(mineField, inputCount, outputParameters);
     }
 
+    @Override
+    protected NeatMineSweeperGenome createRandomGenome(RandomGenerator random, int inputCount, int outputCount) {
+
+        List<OutputNeuronParameters> outputParameters = new ArrayList<>();
+
+        for (int i = 0; i < outputCount; i++) {
+
+            ActivationFunction activationFunction = NeatMutationFunctions.getRandomActivationFunction(random);
+            OutputNeuronParameters parameters = new OutputNeuronParameters(
+                    activationFunction,
+                    activationFunction.defaultParameters());
+
+            outputParameters.add(parameters);
+        }
+
+        MineField mineField = new MineField(random, settings);
+        return new NeatMineSweeperGenome(mineField, inputCount, outputParameters);
+    }
 
 }

@@ -18,7 +18,7 @@ public class NeatMineSweeper extends MineSweeper<NeatMineSweeperGenome> {
 
         // TODO: pass these in?
         final int maxStepsPerActivation = 10;
-        final boolean resetStateBeforeActivation = true;
+        final boolean resetStateBeforeActivation = false;
 
         return genome.neuralNet.activateSingle(inputs, bias, maxStepsPerActivation, resetStateBeforeActivation);
     }

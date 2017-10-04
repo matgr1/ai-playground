@@ -50,5 +50,7 @@ public abstract class ActivationFunction {
         }
     }
 
+    public abstract double[] defaultParameters();
+
     protected abstract double computeActivation(double x, double[] parameters);
 }

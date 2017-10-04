@@ -1,11 +1,14 @@
 package matgr.ai.neuralnet.feedforward;
 
 import matgr.ai.genetic.NumericGenome;
+import matgr.ai.neuralnet.activation.ActivationFunction;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class FeedForwardNeuralNetGenome extends NumericGenome {
+
+    public final ActivationFunction activationFunction;
 
     public final int inputCount;
 
@@ -15,31 +18,29 @@ public abstract class FeedForwardNeuralNetGenome extends NumericGenome {
 
     public final int neuronsPerHiddenLayer;
 
-    public final double activationResponse;
-
     protected FeedForwardNeuralNetGenome(NumericGenome genome,
+                                         ActivationFunction activationFunction,
                                          int inputCount,
                                          int outputCount,
                                          int hiddenLayers,
-                                         int neuronsPerHiddenLayer,
-                                         double activationResponse) {
+                                         int neuronsPerHiddenLayer) {
         super(genome);
 
+        this.activationFunction = activationFunction;
         this.inputCount = inputCount;
         this.outputCount = outputCount;
         this.hiddenLayers = hiddenLayers;
         this.neuronsPerHiddenLayer = neuronsPerHiddenLayer;
-        this.activationResponse = activationResponse;
     }
 
     public FeedForwardNeuralNet decode() {
 
         FeedForwardNeuralNet neuralNet = new FeedForwardNeuralNet(
+                activationFunction,
                 inputCount,
                 outputCount,
                 hiddenLayers,
-                neuronsPerHiddenLayer,
-                activationResponse);
+                neuronsPerHiddenLayer);
 
         int weightIndex = 0;
 

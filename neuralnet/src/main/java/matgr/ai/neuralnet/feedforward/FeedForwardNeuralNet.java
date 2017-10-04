@@ -1,6 +1,6 @@
 package matgr.ai.neuralnet.feedforward;
 
-import matgr.ai.neuralnet.activation.SoftplusActivationFunction;
+import matgr.ai.neuralnet.activation.ActivationFunction;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.ArrayList;
@@ -9,9 +9,7 @@ import java.util.List;
 
 public class FeedForwardNeuralNet {
 
-    // TODO: allow different activation functions ...also, for NEAT the default activationResponse
-    //       should be 4.9 (see here: http://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf)
-    private final double activationResponse;
+    public final ActivationFunction activationFunction;
 
     private final List<FeedForwardNeuronLayer> writableLayers;
 
@@ -19,13 +17,13 @@ public class FeedForwardNeuralNet {
 
     public final FeedForwardNeuralNetProperties properties;
 
-    public FeedForwardNeuralNet(int inputCount,
+    public FeedForwardNeuralNet(ActivationFunction activationFunction,
+                                int inputCount,
                                 int outputCount,
                                 int hiddenLayers,
-                                int neuronsPerHiddenLayer,
-                                double activationResponse) {
+                                int neuronsPerHiddenLayer) {
 
-        this.activationResponse = activationResponse;
+        this.activationFunction = activationFunction;
 
         writableLayers = new ArrayList<>();
         layers = Collections.unmodifiableList(writableLayers);
@@ -89,21 +87,13 @@ public class FeedForwardNeuralNet {
                 outputNeuronWeights);
     }
 
-    public void randomize(RandomGenerator random) {
-
-        for (FeedForwardNeuronLayer layer : layers) {
-            layer.randomize(random);
-        }
-
-    }
-
     private FeedForwardNeuralNet(FeedForwardNeuralNet other) {
 
         if (other == null) {
             throw new IllegalArgumentException("other neural net not provided");
         }
 
-        this.activationResponse = other.activationResponse;
+        activationFunction = other.activationFunction;
 
         writableLayers = new ArrayList<>();
         layers = Collections.unmodifiableList(writableLayers);
@@ -122,6 +112,14 @@ public class FeedForwardNeuralNet {
                 other.properties.hiddenNeuronWeights,
                 other.properties.outputNeurons,
                 other.properties.outputNeuronWeights);
+    }
+
+    public void randomize(RandomGenerator random) {
+
+        for (FeedForwardNeuronLayer layer : layers) {
+            layer.randomize(random);
+        }
+
     }
 
     public List<Double> activate(List<Double> inputs, double bias) {
@@ -154,8 +152,7 @@ public class FeedForwardNeuralNet {
 
                 neuronSum += (neuron.biasWeight * bias);
 
-                // TODO: allow different activation functions
-                double neuronOutput = SoftplusActivationFunction.instance.compute(neuronSum, activationResponse);
+                double neuronOutput = activationFunction.compute(neuronSum);
                 currentOutputs.add(neuronOutput);
             }
 

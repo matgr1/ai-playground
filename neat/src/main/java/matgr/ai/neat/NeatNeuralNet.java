@@ -10,7 +10,7 @@ public class NeatNeuralNet extends CyclicNeuralNet<NeatConnection, Neuron> {
     // TODO: do this better?
     private SortedMap<Long, NeatConnection> connectionMap;
 
-    public NeatNeuralNet(int inputCount, Iterable<? extends ActivatableNeuronParameters> outputNeuronsParameters) {
+    public NeatNeuralNet(int inputCount, Iterable<OutputNeuronParameters> outputNeuronsParameters) {
 
         super(new DefaultNeuronFactory(), new NeatConnectionFactory(), inputCount, outputNeuronsParameters);
     }

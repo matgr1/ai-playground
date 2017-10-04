@@ -1,18 +1,24 @@
 package matgr.ai.neat.mutation;
 
-import matgr.ai.neat.NeatConnection;
-import matgr.ai.neat.NeatGenome;
 import matgr.ai.genetic.mutation.MutationFunctions;
 import matgr.ai.math.DiscreteDistribution;
 import matgr.ai.math.RandomFunctions;
-import matgr.ai.neuralnet.activation.DefaultActivationFunctions;
+import matgr.ai.neat.NeatConnection;
+import matgr.ai.neat.NeatGenome;
+import matgr.ai.neuralnet.activation.ActivationFunction;
+import matgr.ai.neuralnet.activation.KnownActivationFunctions;
+import matgr.ai.neuralnet.cyclic.ConnectionIds;
 import matgr.ai.neuralnet.cyclic.Neuron;
 import matgr.ai.neuralnet.cyclic.NeuronType;
-import matgr.ai.neuralnet.cyclic.ConnectionIds;
 import matgr.ai.neuralnet.cyclic.ReadOnlyConnectionMap;
 import org.apache.commons.math3.random.RandomGenerator;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class NeatMutationFunctions {
 
@@ -70,6 +76,13 @@ public class NeatMutationFunctions {
         }
     }
 
+    public static ActivationFunction getRandomActivationFunction(RandomGenerator random){
+
+        // TODO: allow limiting/setting probabilities of each type
+        String activationFunctionName = RandomFunctions.selectItem(random, KnownActivationFunctions.ALL.keySet());
+        return KnownActivationFunctions.ALL.get(activationFunctionName);
+    }
+
     private static boolean addNodeMutation(RandomGenerator random,
                                            NeatGenome genome,
                                            Map<Long, Map<Long, Long>> innovationMap) {
@@ -81,9 +94,8 @@ public class NeatMutationFunctions {
 
             oldConnection.enabled = false;
 
-            Neuron newNode = genome.neuralNet.addHiddenNeuron(
-                    DefaultActivationFunctions.HIDDEN_NODE_ACTIVATION_FUNCTION,
-                    genome.activationResponse);
+            ActivationFunction activationFunction = getRandomActivationFunction(random);
+            Neuron newNode = genome.neuralNet.addHiddenNeuron(activationFunction);
 
             // TODO: order? max weight first or second?
             addConnection(

@@ -171,8 +171,7 @@ public class AppController {
                 evolutionContext,
                 settings.populationCount,
                 settings.getMineSweeperInputCount(),
-                settings.mineSweeperOutputCount,
-                settings.activationResponse);
+                settings.mineSweeperOutputCount);
 
         setCombinedStats(new CombinedMineSweeperStats());
         setStats(new MineSweeperStatsItem());

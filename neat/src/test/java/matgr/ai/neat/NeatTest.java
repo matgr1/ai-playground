@@ -123,8 +123,7 @@ public class NeatTest extends TestCase {
                 evolutionContext,
                 XorConstants.populationSize,
                 XorConstants.inputCount,
-                XorConstants.outputCount,
-                XorConstants.activationResponse);
+                XorConstants.outputCount);
 
         long generation = 0;
 

@@ -116,7 +116,6 @@ public class MineSweeperSettings {
 
     public final double bias = -1;
 
-    public final double activationResponse = 4.9;//1.0;
     public final double weightRange = 5.0;
 
     public final double mineSweeperRadius = 0.015 / 3.0;

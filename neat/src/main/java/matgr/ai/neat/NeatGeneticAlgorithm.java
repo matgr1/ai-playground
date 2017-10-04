@@ -1,10 +1,10 @@
 package matgr.ai.neat;
 
 import matgr.ai.genetic.*;
-import matgr.ai.neat.crossover.NeatCrossoverFunctions;
-import matgr.ai.neat.crossover.NeatCrossoverSettings;
 import matgr.ai.genetic.selection.SelectionStrategy;
 import matgr.ai.math.RandomFunctions;
+import matgr.ai.neat.crossover.NeatCrossoverFunctions;
+import matgr.ai.neat.crossover.NeatCrossoverSettings;
 import matgr.ai.neat.mutation.NeatMutationFunctions;
 import matgr.ai.neat.mutation.NeatMutationSettings;
 import matgr.ai.neat.speciation.SpeciationStrategy;
@@ -57,31 +57,25 @@ public abstract class NeatGeneticAlgorithm<
     public PopulationT createRandomPopulation(EvolutionContext context,
                                               int populationSize,
                                               int inputCount,
-                                              int outputCount,
-                                              double activationResponse) {
-
-        @SuppressWarnings("unchecked")
-        NeatEvolutionContext ctx = (NeatEvolutionContext) context;
+                                              int outputCount) {
 
         return createRandomPopulation(
-                (NeatEvolutionContext) context,
+                getNeatEvolutionContext(context),
                 populationSize,
                 inputCount,
-                outputCount,
-                activationResponse);
+                outputCount);
     }
 
     private PopulationT createRandomPopulation(NeatEvolutionContext context,
                                                int populationSize,
                                                int inputCount,
-                                               int outputCount,
-                                               double activationResponse) {
+                                               int outputCount) {
 
         List<SpeciesMemberT> genomes = new ArrayList<>();
 
         for (int i = 0; i < populationSize; i++) {
 
-            NeatGenomeT genome = createNewGenome(inputCount, outputCount, activationResponse);
+            NeatGenomeT genome = createRandomGenome(random, inputCount, outputCount);
 
             for (Neuron outputNode : genome.neuralNet.neurons.values(NeuronType.Output)) {
 
@@ -119,15 +113,23 @@ public abstract class NeatGeneticAlgorithm<
         return new NeatEvolutionContext(evolutionParameters, selectionStrategy);
     }
 
+    protected NeatEvolutionContext getNeatEvolutionContext(EvolutionContext context){
+
+        // TODO: is there a better way of handling this?
+        @SuppressWarnings("unchecked")
+        NeatEvolutionContext neatContext = (NeatEvolutionContext) context;
+
+        return neatContext;
+    }
+
     @Override
     protected List<SpeciesT> speciate(EvolutionContext context,
                                       List<SpeciesMemberT> members,
                                       PopulationT previousPopulation) {
-        return speciate((NeatEvolutionContext) context, members, previousPopulation);
+        return speciate( members, previousPopulation);
     }
 
-    private List<SpeciesT> speciate(NeatEvolutionContext context,
-                                    List<SpeciesMemberT> members,
+    private List<SpeciesT> speciate(List<SpeciesMemberT> members,
                                     PopulationT previousPopulation) {
         return speciationStrategy.speciate(members, previousPopulation, this::createSpecies);
     }
@@ -137,7 +139,7 @@ public abstract class NeatGeneticAlgorithm<
                                                           FitnessItem<SpeciesMemberT> parent,
                                                           long currentGeneration,
                                                           int count) {
-        return createOffspringAsexual((NeatEvolutionContext) context, parent, currentGeneration, count);
+        return createOffspringAsexual(getNeatEvolutionContext(context), parent, currentGeneration, count);
     }
 
     private List<SpeciesMemberT> createOffspringAsexual(NeatEvolutionContext context,
@@ -170,10 +172,12 @@ public abstract class NeatGeneticAlgorithm<
                                                          FitnessItem<SpeciesMemberT> parentB,
                                                          long currentGeneration,
                                                          int count) {
-        return createOffspringSexual((NeatEvolutionContext) context, parentA, parentB, currentGeneration, count);
+        return createOffspringSexual(getNeatEvolutionContext(context), parentA, parentB, currentGeneration, count);
     }
 
-    protected abstract NeatGenomeT createNewGenome(int inputCount, int outputCount, double activationResponse);
+    protected abstract NeatGenomeT createNewGenomeFromTemplate(NeatGenomeT template);
+
+    protected abstract NeatGenomeT createRandomGenome(RandomGenerator random, int inputCount, int outputCount);
 
     private List<SpeciesMemberT> createOffspringSexual(NeatEvolutionContext context,
                                                        FitnessItem<SpeciesMemberT> parentA,
@@ -208,7 +212,7 @@ public abstract class NeatGeneticAlgorithm<
                     random,
                     crossoverSettings,
                     parents,
-                    this::createNewGenome);
+                    this::createNewGenomeFromTemplate);
 
             if (RandomFunctions.testProbability(random, mutationSettings.getSexualMutationProbability())) {
                 // Mutate

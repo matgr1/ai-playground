@@ -4,9 +4,8 @@ import matgr.ai.neuralnet.activation.ActivationFunction;
 
 public class Neuron {
 
-    // TODO: these should be immutable?
-    protected ActivationFunction activationFunction;
-    protected double[] activationFunctionParameters;
+    private ActivationFunction activationFunction;
+    private double[] activationFunctionParameters;
 
     public final NeuronType type;
 
