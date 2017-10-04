@@ -30,7 +30,7 @@ public class MineSweeperSettings {
 
     public final int hiddenLayers = 1;
     public final double visionConeDistance = 0.25;
-    public final double visionConeAngle = MathFunctions.degreesToRadians(60);
+    public final double visionConeAngle = MathFunctions.degreesToRadians(70);
     public final int visionConeDivisions = 1;
     public final int minesPerVisionConeDivision = 4;
 
@@ -51,7 +51,7 @@ public class MineSweeperSettings {
     public final Size minefieldSize = new Size(1.0, 1.0);
 
     public double getMaxTurnRate() {
-        return visionConeAngle / 4.0;// 2.0 * Math.PI / 4.0;
+        return visionConeAngle / 16.0;// 2.0 * Math.PI / 4.0;
     }
 
     public final double minSpeedForwards = 0.002;
@@ -87,7 +87,7 @@ public class MineSweeperSettings {
     public final double sexualReproductionProportion = 0.75;
     public final double interSpeciesSexualReproductionProportion = 0.1;
 
-    public static final int initialClusterCount = 10;
+    public static final int initialSpeciesCount = 10;
     public final double speciationExcessFactor = 1.0;
     public final double speciationDisjointFactor = 1.0;
     public final double speciationWeightFactor = 0.4;
@@ -213,6 +213,6 @@ public class MineSweeperSettings {
                 speciationExcessFactor,
                 speciationDisjointFactor,
                 speciationWeightFactor,
-                initialClusterCount);
+                initialSpeciesCount);
     }
 }

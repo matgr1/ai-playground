@@ -3,6 +3,7 @@ package matgr.ai.neuralnet.cyclic;
 import com.google.common.collect.Iterators;
 import matgr.ai.math.MathFunctions;
 import matgr.ai.neuralnet.activation.ActivationFunction;
+import matgr.ai.neuralnet.activation.KnownActivationFunctions;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -162,10 +163,10 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
         return writableConnections.removeConnection(connection);
     }
 
-    public ActivationResult activateSingle(List<Double> inputSet,
-                                           double bias,
-                                           int maxStepsPerActivation,
-                                           boolean resetStateBeforeActivation) {
+    public List<Double> activateSingle(List<Double> inputSet,
+                                       double bias,
+                                       int maxStepsPerActivation,
+                                       boolean resetStateBeforeActivation) {
 
         List<List<Double>> inputSets = new ArrayList<>();
         inputSets.add(inputSet);
@@ -173,10 +174,10 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
         return activateSet(inputSets, bias, maxStepsPerActivation, resetStateBeforeActivation);
     }
 
-    public ActivationResult activateSet(List<List<Double>> inputSets,
-                                        double bias,
-                                        int maxStepsPerActivation,
-                                        boolean resetStateBeforeActivation) {
+    public List<Double> activateSet(List<List<Double>> inputSets,
+                                    double bias,
+                                    int maxStepsPerActivation,
+                                    boolean resetStateBeforeActivation) {
 
         if (inputSets.size() <= 0) {
             throw new IllegalStateException("No input sets provided");
@@ -228,7 +229,15 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
                 Iterator<Double> inputIterator = inputs.iterator();
 
                 for (NeuronState<NeuronT> neuron : inputNeurons) {
-                    neuron.postSynapse = inputIterator.next();
+
+                    double inputValue = inputIterator.next();
+
+                    if (Double.isNaN(inputValue)) {
+                        // TODO: pass in some sort of NaN handler...  if it fails, then set this to 0.0
+                        inputValue = 0.0;
+                    }
+
+                    neuron.postSynapse = inputValue;
                 }
             }
 
@@ -237,23 +246,23 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
 
                 if (connection.enabled) {
 
-                    NeuronState<NeuronT> sourceNeuron = writableNeurons.get(connection.sourceId);
-                    NeuronState<NeuronT> targetNeuron = writableNeurons.get(connection.targetId);
+                    if (connection.weight != 0.0) {
 
-                    if (Double.isNaN(sourceNeuron.postSynapse)) {
-                        return new ActivationResult(ActivationResultCode.PostSynapticNaN, null);
-                    }
-                    if (Double.isInfinite(sourceNeuron.postSynapse)) {
-                        return new ActivationResult(ActivationResultCode.PostSynapticInfinite, null);
-                    }
+                        NeuronState<NeuronT> sourceNeuron = writableNeurons.get(connection.sourceId);
+                        NeuronState<NeuronT> targetNeuron = writableNeurons.get(connection.targetId);
 
-                    targetNeuron.preSynapse += sourceNeuron.postSynapse * connection.weight;
+                        targetNeuron.preSynapse += sourceNeuron.postSynapse * connection.weight;
 
-                    if (Double.isNaN(targetNeuron.preSynapse)) {
-                        return new ActivationResult(ActivationResultCode.PreSynapticNaN, null);
-                    }
-                    if (Double.isInfinite(targetNeuron.preSynapse)) {
-                        return new ActivationResult(ActivationResultCode.PreSynapticInfinite, null);
+                        if (Double.isNaN(targetNeuron.preSynapse)) {
+                            // TODO: pass in some sort of NaN handler... it should be given "sourceNeuron.postSynapse"
+                            //       and "connection.weight" (so it can decide what to do based on input values being
+                            //       infinite/NaN/etc... if it fails, then set this to 0.0
+                            targetNeuron.preSynapse = 0.0;
+                        }
+
+                        if (Double.isNaN(targetNeuron.preSynapse)){
+                            throw new IllegalStateException("NaN pre-synapse value");
+                        }
                     }
                 }
             }
@@ -270,19 +279,21 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
 
                 double value = neuron.neuron.computeActivation(neuron.preSynapse);
 
+                if (Double.isNaN(value)) {
+                    // NOTE: sigmoid shouldn't produce NaN, so fallback to this one for now...
+                    // TODO: pass in some sort of NaN handler... if it fails, then try this
+                    value = KnownActivationFunctions.SIGMOID.compute(neuron.preSynapse);
+                }
+
+                if (Double.isNaN(value)){
+                    throw new IllegalStateException("NaN activation output");
+                }
+
                 if (!MathFunctions.fuzzyCompare(value, neuron.postSynapse)) {
                     moreWork = true;
                 }
 
                 neuron.postSynapse = value;
-
-                if (Double.isNaN(neuron.postSynapse)) {
-                    return new ActivationResult(ActivationResultCode.PostSynapticNaN, null);
-                }
-                if (Double.isInfinite(neuron.postSynapse)) {
-                    return new ActivationResult(ActivationResultCode.PostSynapticInfinite, null);
-                }
-
                 neuron.preSynapse = 0.0;
             }
 
@@ -298,7 +309,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
             outputs.add(neuron.postSynapse);
         }
 
-        return new ActivationResult(ActivationResultCode.Success, outputs);
+        return outputs;
     }
 
     protected CyclicNeuralNet<ConnectionT, NeuronT> deepClone() {

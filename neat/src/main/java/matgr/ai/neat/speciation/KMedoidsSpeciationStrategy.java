@@ -11,15 +11,15 @@ import java.util.List;
 
 public class KMedoidsSpeciationStrategy extends SpeciationStrategy {
 
-    public final int initialClusterCount;
+    public final int initialSpeciesCount;
 
     public KMedoidsSpeciationStrategy(double excessFactor,
                                       double disjointFactor,
                                       double weightFactor,
-                                      int initialClusterCount) {
+                                      int initialSpeciesCount) {
 
         super(excessFactor, disjointFactor, weightFactor);
-        this.initialClusterCount = initialClusterCount;
+        this.initialSpeciesCount = initialSpeciesCount;
     }
 
     @Override
@@ -41,7 +41,7 @@ public class KMedoidsSpeciationStrategy extends SpeciationStrategy {
             return clusteringAlgorithm.refine(initialClusters);
         }
 
-        return clusteringAlgorithm.compute(members, initialClusterCount);
+        return clusteringAlgorithm.compute(members, initialSpeciesCount);
     }
 
     private class NeatSpeciationClusteringAlgorithm<SpeciesMemberT extends SpeciesMember<? extends NeatGenome>>

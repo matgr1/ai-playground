@@ -1,12 +1,6 @@
 package matgr.ai.neatsample;
 
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.ReadOnlyStringProperty;
-import javafx.beans.property.ReadOnlyStringWrapper;
-import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.*;
 
 public class MineSweeperStatsItem implements Cloneable {
 
@@ -16,6 +10,7 @@ public class MineSweeperStatsItem implements Cloneable {
     }
     public void setExplosions(Integer value) {
         explosions.set(value);
+        setExplosionsToClearedRatio((double)value / (double)getCleared());
     }
     public IntegerProperty explosionsProperty() {
         return explosions;
@@ -27,9 +22,33 @@ public class MineSweeperStatsItem implements Cloneable {
     }
     public void setCleared(Integer value) {
         cleared.set(value);
+        setExplosionsToClearedRatio((double)getExplosions() / (double)value);
     }
     public IntegerProperty clearedProperty() {
         return cleared;
+    }
+
+    private ReadOnlyDoubleWrapper explosionsToClearedRatio = new ReadOnlyDoubleWrapper();
+    public Double getExplosionsToClearedRatio() {
+        return explosionsToClearedRatio.get();
+    }
+    private void setExplosionsToClearedRatio(Double value) {
+        explosionsToClearedRatio.set(value);
+        setExplosionsToClearedRatioDisplay(String.format("%.2f", value));
+    }
+    public ReadOnlyDoubleProperty explosionsToClearedRatioProperty() {
+        return explosionsToClearedRatio.getReadOnlyProperty();
+    }
+
+    private ReadOnlyStringWrapper explosionsToClearedRatioDisplay = new ReadOnlyStringWrapper();
+    public String getExplosionsToClearedRatioDisplay() {
+        return explosionsToClearedRatioDisplay.get();
+    }
+    private void setExplosionsToClearedRatioDisplay(String value) {
+        explosionsToClearedRatioDisplay.set(value);
+    }
+    public ReadOnlyStringProperty explosionsToClearedRatioDisplayProperty() {
+        return explosionsToClearedRatioDisplay.getReadOnlyProperty();
     }
 
     private DoubleProperty explosionsPerIteration = new SimpleDoubleProperty();

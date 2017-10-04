@@ -109,6 +109,11 @@
                     <Label text="${controller.stats.explosions}"/>
                 </HBox>
 
+                <HBox GridPane.rowIndex="1" GridPane.columnIndex="3">
+                    <Label text="Exploded/Cleared: "/>
+                    <Label text="${controller.stats.explosionsToClearedRatioDisplay}"/>
+                </HBox>
+
             </GridPane>
 
         </HBox>

@@ -2,7 +2,6 @@ package matgr.ai.neat.implementation;
 
 import matgr.ai.genetic.SpeciesMember;
 import matgr.ai.neat.NeatGenome;
-import matgr.ai.neuralnet.cyclic.ActivationResult;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,19 +35,24 @@ public class XorSpeciesMember implements SpeciesMember<NeatGenome> {
                 inputs.add((double) i);
                 inputs.add((double) j);
 
-                ActivationResult result = genome.neuralNet.activateSingle(
+                List<Double> result = genome.neuralNet.activateSingle(
                         inputs,
                         XorConstants.bias,
                         XorConstants.maxStepsPerActivation,
                         XorConstants.resetStateBeforeActivation);
 
-                if (!result.isSuccess()) {
+                double value = result.get(0);
 
-                    return 0.0;
+                if (Double.isNaN(value)) {
+                    throw new AssertionError("Received NaN activation result");
+                }
+
+                if (Double.isInfinite(value)) {
+
+                    sumOfErrorSquares = Double.POSITIVE_INFINITY;
+                    break;
 
                 } else {
-
-                    double value = result.outputs.get(0);
 
                     double error = (value - expectedValue);
                     double errorSquared = error * error;
@@ -56,6 +60,14 @@ public class XorSpeciesMember implements SpeciesMember<NeatGenome> {
                     sumOfErrorSquares += errorSquared;
                 }
             }
+
+            if (Double.isInfinite(sumOfErrorSquares)) {
+                break;
+            }
+        }
+
+        if (Double.isInfinite(sumOfErrorSquares)) {
+            return Double.NEGATIVE_INFINITY;
         }
 
         return 1.0 - Math.sqrt(sumOfErrorSquares);

@@ -6,15 +6,15 @@ import matgr.ai.genetic.mutation.MutationType;
 public class XorConstants {
 
     public static final int testSize = 2;
-    public static final double successFitnessThreshold = 0.9;
+    public static final double successFitnessThreshold = 0.99;
 
     public static final double bias = -1;
 
     public static final int maxStepsPerActivation = 10;
     public static final boolean resetStateBeforeActivation = true;
 
-    public static final int populationSize = 500;
-    public static final int generations = 1000;
+    public static final int populationSize = 200;
+    public static final int maxGenerations = 200;
 
     public static final int inputCount = 2;
     public static final int outputCount = 1;
@@ -45,7 +45,7 @@ public class XorConstants {
     public static final double neatRemoveConnectionProbability = 9.0;
     public static final double neatMutateWeightProbability = 70.0;
 
-    public static final int initialClusterCount = 10;
+    public static final int initialSpeciesCount = 10;
     public static final double speciationExcessFactor = 1.0;
     public static final double speciationDisjointFactor = 1.0;
     public static final double speciationWeightFactor = 0.4;

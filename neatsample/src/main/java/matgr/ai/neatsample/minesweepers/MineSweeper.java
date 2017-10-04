@@ -6,7 +6,6 @@ import matgr.ai.math.MathFunctions;
 import matgr.ai.math.RandomFunctions;
 import matgr.ai.neatsample.Point;
 import matgr.ai.neatsample.Size;
-import matgr.ai.neuralnet.cyclic.ActivationResult;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.ArrayList;
@@ -121,26 +120,13 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
             double rawSpeed = rawSpeedAndRotation.speed;
             double rawRotation = rawSpeedAndRotation.rotation;
 
-            // TODO: DELETE... or return an error
-            if (Double.isNaN(rawSpeed)) {
-                throw new IllegalStateException();
-            }
-            if (Double.isInfinite(rawSpeed)) {
-                throw new IllegalStateException();
-            }
-            if (Double.isNaN(rawRotation)) {
-                throw new IllegalStateException();
-            }
-            if (Double.isInfinite(rawRotation)) {
-                throw new IllegalStateException();
-            }
-
             double speed = computeSpeed(
                     rawSpeed,
                     settings.minSpeedForwards,
                     settings.maxSpeedForwards,
                     settings.minSpeedReverse,
                     settings.maxSpeedReverse);
+
             double rotation = computeRotation(rawRotation, settings.getMaxTurnRate());
 
             MineSweeperDirection newDirection = direction.rotate(rotation);
@@ -355,6 +341,24 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
                                        double minSpeedReverse,
                                        double maxSpeedReverse) {
 
+        if (Double.isNaN(rawSpeed)) {
+            logger.warning("Received NaN raw speed value");
+            return 0.0;
+        }
+
+        if (Double.isInfinite(rawSpeed)) {
+
+            logger.fine("Received infinite raw speed value");
+
+            if (rawSpeed > 0.0) {
+                return maxSpeedForwards;
+            }
+
+            if (rawSpeed < 0.0) {
+                return -maxSpeedReverse;
+            }
+        }
+
         final double rawValueMin = 0.0;
         final double rawValueMax = 1.0;
         final double rawValueRange = rawValueMax - rawValueMin;
@@ -378,6 +382,24 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
 
     private static double computeRotation(double rawRotation, double maxRotation) {
 
+        if (Double.isNaN(rawRotation)) {
+            logger.warning("Received NaN raw rotation value");
+            return 0.0;
+        }
+
+        if (Double.isInfinite(rawRotation)) {
+
+            logger.fine("Received infinite raw speed value");
+
+            if (rawRotation > 0.0) {
+                return maxRotation;
+            }
+
+            if (rawRotation < 0.0) {
+                return -maxRotation;
+            }
+        }
+
         final double rawValueMin = 0.0;
         final double rawValueMax = 1.0;
         final double rawValueRange = rawValueMax - rawValueMin;
@@ -391,7 +413,7 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
         return (slope * rawRotation) + intercept;
     }
 
-    protected abstract ActivationResult activateNeuralNet(List<Double> inputs, double bias);
+    protected abstract List<Double> activateNeuralNet(List<Double> inputs, double bias);
 
     private SpeedAndRotation computeRawSpeedAndDirection(List<MineStatus> closestMines) {
 
@@ -412,17 +434,10 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
         }
 
         // TODO: reset or not? also how many steps per activation?
-        ActivationResult outputs = activateNeuralNet(inputsList, settings.bias);
+        List<Double> outputs = activateNeuralNet(inputsList, settings.bias);
 
-        double rawSpeed = 0.0;
-        double rawRotation = 0.0;
-
-        if (outputs.isSuccess()) {
-            rawSpeed = outputs.outputs.get(0);
-            rawRotation = outputs.outputs.get(1);
-        } else {
-            logger.warning(String.format("Failed to activate neural net - %s", outputs.resultCode.name()));
-        }
+        double rawSpeed = outputs.get(0);
+        double rawRotation = outputs.get(1);
 
         return new SpeedAndRotation(rawSpeed, rawRotation);
     }

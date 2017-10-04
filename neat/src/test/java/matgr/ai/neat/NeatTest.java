@@ -76,7 +76,7 @@ public class NeatTest extends TestCase {
                 XorConstants.speciationExcessFactor,
                 XorConstants.speciationDisjointFactor,
                 XorConstants.speciationWeightFactor,
-                XorConstants.initialClusterCount);
+                XorConstants.initialSpeciesCount);
 
         geneticAlgorithm = new XorNeatGeneticAlgorithm(
                 random,
@@ -105,15 +105,8 @@ public class NeatTest extends TestCase {
         return new TestSuite(NeatTest.class);
     }
 
-    // NOTE: test is not ready yet
-    private boolean skip = true;
-
     // TODO: turn these into actual tests...
     public void test1() {
-
-        if (skip) {
-            return;
-        }
 
         EvolutionContext evolutionContext = geneticAlgorithm.createEvolutionContext(
                 evolutionParameters,
@@ -129,7 +122,7 @@ public class NeatTest extends TestCase {
 
         FitnessItem<XorSpeciesMember> bestMember = null;
 
-        for (; generation < XorConstants.generations; generation++) {
+        for (; generation < XorConstants.maxGenerations; generation++) {
 
             PopulationFitnessSnapshot fitnessSnapshot = PopulationFitnessSnapshot.create(population);
             FitnessItem<UUID> curBestMember = fitnessSnapshot.genomesDescendingFitness.get(0);

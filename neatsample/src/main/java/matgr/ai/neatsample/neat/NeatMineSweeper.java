@@ -2,7 +2,6 @@ package matgr.ai.neatsample.neat;
 
 import matgr.ai.neatsample.minesweepers.MineSweeper;
 import matgr.ai.neatsample.minesweepers.MineSweeperSettings;
-import matgr.ai.neuralnet.cyclic.ActivationResult;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.List;
@@ -14,7 +13,7 @@ public class NeatMineSweeper extends MineSweeper<NeatMineSweeperGenome> {
     }
 
     @Override
-    protected ActivationResult activateNeuralNet(List<Double> inputs, double bias) {
+    protected List<Double> activateNeuralNet(List<Double> inputs, double bias) {
 
         // TODO: pass these in?
         final int maxStepsPerActivation = 10;
