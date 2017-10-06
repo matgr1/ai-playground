@@ -10,6 +10,9 @@ public abstract class FeedForwardNeuralNetGenome extends NumericGenome {
 
     public final ActivationFunction activationFunction;
 
+    // TODO: this should be immutable
+    public final double[] activationFunctionParameters;
+
     public final int inputCount;
 
     public final int outputCount;
@@ -19,14 +22,16 @@ public abstract class FeedForwardNeuralNetGenome extends NumericGenome {
     public final int neuronsPerHiddenLayer;
 
     protected FeedForwardNeuralNetGenome(NumericGenome genome,
-                                         ActivationFunction activationFunction,
                                          int inputCount,
                                          int outputCount,
                                          int hiddenLayers,
-                                         int neuronsPerHiddenLayer) {
+                                         int neuronsPerHiddenLayer,
+                                         ActivationFunction activationFunction,
+                                         double... activationFunctionParameters) {
         super(genome);
 
         this.activationFunction = activationFunction;
+        this.activationFunctionParameters = activationFunctionParameters;
         this.inputCount = inputCount;
         this.outputCount = outputCount;
         this.hiddenLayers = hiddenLayers;
@@ -36,11 +41,12 @@ public abstract class FeedForwardNeuralNetGenome extends NumericGenome {
     public FeedForwardNeuralNet decode() {
 
         FeedForwardNeuralNet neuralNet = new FeedForwardNeuralNet(
-                activationFunction,
                 inputCount,
                 outputCount,
                 hiddenLayers,
-                neuronsPerHiddenLayer);
+                neuronsPerHiddenLayer,
+                activationFunction,
+                activationFunctionParameters);
 
         int weightIndex = 0;
 

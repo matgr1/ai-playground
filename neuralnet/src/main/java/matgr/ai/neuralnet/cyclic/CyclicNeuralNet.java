@@ -291,10 +291,6 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
                             //       based on input values being infinite/NaN/etc... if it fails, then set this to 0.0
                             targetNeuron.preSynapse = 0.0;
                         }
-
-                        if (Double.isNaN(targetNeuron.preSynapse)) {
-                            throw new IllegalStateException("NaN pre-synapse value");
-                        }
                     }
                 }
             }
@@ -315,11 +311,9 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
                     // NOTE: sigmoid shouldn't produce NaN, so fallback to this one for now...
                     // TODO: pass in some sort of NaN handler (with the ability to completely bail out and return a
                     //       status code from this function)... if it fails, then try this
-                    value = KnownActivationFunctions.SIGMOID.compute(neuron.preSynapse);
-                }
-
-                if (Double.isNaN(value)) {
-                    throw new IllegalStateException("NaN activation output");
+                    value = KnownActivationFunctions.SIGMOID.compute(
+                            neuron.preSynapse,
+                            KnownActivationFunctions.SIGMOID.defaultParameters());
                 }
 
                 // NOTE: this may only help for very simple networks...

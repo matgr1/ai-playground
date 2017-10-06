@@ -3,7 +3,11 @@ package matgr.ai.neat;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import matgr.ai.genetic.*;
+import matgr.ai.genetic.DefaultEvolutionParameters;
+import matgr.ai.genetic.EvolutionContext;
+import matgr.ai.genetic.EvolutionParameters;
+import matgr.ai.genetic.FitnessItem;
+import matgr.ai.genetic.PopulationFitnessSnapshot;
 import matgr.ai.genetic.crossover.DefaultCrossoverSettings;
 import matgr.ai.genetic.mutation.DefaultMutationSettings;
 import matgr.ai.genetic.selection.LinearRankingSelectionStrategy;
@@ -118,11 +122,9 @@ public class NeatTest extends TestCase {
                 XorConstants.inputCount,
                 XorConstants.outputCount);
 
-        long generation = 0;
-
         FitnessItem<XorSpeciesMember> bestMember = null;
 
-        for (; generation < XorConstants.maxGenerations; generation++) {
+        for (long generation = 0; generation < XorConstants.maxGenerations; generation++) {
 
             PopulationFitnessSnapshot fitnessSnapshot = PopulationFitnessSnapshot.create(population);
             FitnessItem<UUID> curBestMember = fitnessSnapshot.genomesDescendingFitness.get(0);

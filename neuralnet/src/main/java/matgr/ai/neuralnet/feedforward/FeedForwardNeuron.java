@@ -25,7 +25,7 @@ public class FeedForwardNeuron {
     public void randomize(RandomGenerator random){
 
         for (int i = 0; i < this.weights.size(); i++) {
-            this.writableWeights.add(getInitialWeight(random));
+            this.writableWeights.set(i, getInitialWeight(random));
         }
 
         this.biasWeight = getInitialWeight(random);

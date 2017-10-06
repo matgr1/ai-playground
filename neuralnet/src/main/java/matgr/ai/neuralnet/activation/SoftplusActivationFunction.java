@@ -1,5 +1,7 @@
 package matgr.ai.neuralnet.activation;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 public class SoftplusActivationFunction extends ActivationFunction {
 
     public static final SoftplusActivationFunction INSTANCE = new SoftplusActivationFunction();
@@ -16,5 +18,15 @@ public class SoftplusActivationFunction extends ActivationFunction {
     @Override
     protected double computeActivation(double x, double[] parameters) {
         return Math.log(1 + Math.exp(x));
+    }
+
+    @Override
+    protected double computeActivationInverse(double x, double[] parameters) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    protected double computeActivationDerivative(double x, double[] parameters) {
+        throw new NotImplementedException();
     }
 }

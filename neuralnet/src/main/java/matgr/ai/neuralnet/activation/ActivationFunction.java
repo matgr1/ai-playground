@@ -30,6 +30,16 @@ public abstract class ActivationFunction {
         return computeActivation(x, parameters);
     }
 
+    public double computeInverse(double x, double... parameters) {
+        validateParameters(parameters);
+        return computeActivationInverse(x, parameters);
+    }
+
+    public double computeDerivative(double x, double... parameters) {
+        validateParameters(parameters);
+        return computeActivationDerivative(x, parameters);
+    }
+
     public void validateParameters(double... parameters) {
         int parameterCount = 0;
         if (parameters != null) {
@@ -44,4 +54,8 @@ public abstract class ActivationFunction {
     public abstract double[] defaultParameters();
 
     protected abstract double computeActivation(double x, double[] parameters);
+
+    protected abstract double computeActivationInverse(double x, double[] parameters);
+
+    protected abstract double computeActivationDerivative(double x, double[] parameters);
 }

@@ -1,15 +1,22 @@
 package matgr.ai.neuralnet.feedforward;
 
 import matgr.ai.neuralnet.activation.ActivationFunction;
+import matgr.ai.neuralnet.activation.KnownActivationFunctions;
 import org.apache.commons.math3.random.RandomGenerator;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 public class FeedForwardNeuralNet {
 
     public final ActivationFunction activationFunction;
+
+    // TODO: this should be immutable...
+    public final double[] activationFunctionParameters;
 
     private final List<FeedForwardNeuronLayer> writableLayers;
 
@@ -17,13 +24,15 @@ public class FeedForwardNeuralNet {
 
     public final FeedForwardNeuralNetProperties properties;
 
-    public FeedForwardNeuralNet(ActivationFunction activationFunction,
-                                int inputCount,
+    public FeedForwardNeuralNet(int inputCount,
                                 int outputCount,
                                 int hiddenLayers,
-                                int neuronsPerHiddenLayer) {
+                                int neuronsPerHiddenLayer,
+                                ActivationFunction activationFunction,
+                                double... activationFunctionParameters) {
 
         this.activationFunction = activationFunction;
+        this.activationFunctionParameters = activationFunctionParameters;
 
         writableLayers = new ArrayList<>();
         layers = Collections.unmodifiableList(writableLayers);
@@ -94,6 +103,7 @@ public class FeedForwardNeuralNet {
         }
 
         activationFunction = other.activationFunction;
+        activationFunctionParameters = other.activationFunctionParameters;
 
         writableLayers = new ArrayList<>();
         layers = Collections.unmodifiableList(writableLayers);
@@ -119,10 +129,9 @@ public class FeedForwardNeuralNet {
         for (FeedForwardNeuronLayer layer : layers) {
             layer.randomize(random);
         }
-
     }
 
-    public List<Double> activate(List<Double> inputs, double bias) {
+    public List<Double> activate(Collection<Double> inputs, double bias) {
 
         if (properties.inputCount != inputs.size()) {
             throw new IllegalArgumentException("Incorrect number of inputs");
@@ -146,13 +155,38 @@ public class FeedForwardNeuralNet {
                     double input = currentInputs.get(i);
                     double weight = neuron.weights.get(i);
 
-                    neuronSum += (input * weight);
+                    neuronSum += input * weight;
 
+                    if (Double.isNaN(neuronSum)) {
+                        // TODO: pass in some sort of NaN handler (with the ability to completely bail out and
+                        //       return a status code from this function)... it should be given
+                        //       "input" and "weight" (so it can decide what to do based on input values being
+                        //       infinite/NaN/etc... if it fails, then set this to 0.0
+                        neuronSum = 0.0;
+                    }
                 }
 
                 neuronSum += (neuron.biasWeight * bias);
 
-                double neuronOutput = activationFunction.compute(neuronSum);
+                if (Double.isNaN(neuronSum)) {
+                    // TODO: pass in some sort of NaN handler (with the ability to completely bail out and
+                    //       return a status code from this function)... it should be given
+                    //       "neuron.biasWeight" and "bias" (so it can decide what to do based on input values being
+                    //       infinite/NaN/etc... if it fails, then set this to 0.0
+                    neuronSum = 0.0;
+                }
+
+                double neuronOutput = activationFunction.compute(neuronSum, activationFunctionParameters);
+
+                if (Double.isNaN(neuronOutput)) {
+                    // NOTE: sigmoid shouldn't produce NaN, so fallback to this one for now...
+                    // TODO: pass in some sort of NaN handler (with the ability to completely bail out and return a
+                    //       status code from this function)... if it fails, then try this
+                    neuronOutput = KnownActivationFunctions.SIGMOID.compute(
+                            neuronSum,
+                            KnownActivationFunctions.SIGMOID.defaultParameters());
+                }
+
                 currentOutputs.add(neuronOutput);
             }
 
@@ -161,6 +195,81 @@ public class FeedForwardNeuralNet {
         }
 
         return currentInputs;
+    }
+
+    public void backPropagate(double learningRate, List<Double> outputs, List<Double> expectedOutputs) {
+
+        //double error = computeError(outputs, expectedOutputs);
+
+        // TODO: handle NaNs
+
+        List<Double> curOutputs = outputs;
+        List<Double> curExpectedOutputs = expectedOutputs;
+
+        for (int layerIndex = writableLayers.size() - 1; layerIndex >= 0; layerIndex--) {
+
+            FeedForwardNeuronLayer layer = writableLayers.get(layerIndex);
+
+            List<Double> nextOutputs = new ArrayList<>();
+            List<Double> nextExpectedOutputs = new ArrayList<>();
+
+            for (int neuronIndex = 0; neuronIndex < layer.neurons.size(); neuronIndex++) {
+
+                FeedForwardNeuron neuron = layer.neurons.get(neuronIndex);
+
+                double neuronOutput = curOutputs.get(neuronIndex);
+                double neuronExpectedOutput = curExpectedOutputs.get(neuronIndex);
+
+                List<Double> weightDerivatives = new ArrayList<>(layer.weightsCount.total);
+
+                for (int weightIndex = 0; weightIndex < layer.weightsCount.total; weightIndex++) {
+                    double currentWegith = layer.
+                }
+
+                // TODO: this could maybe be saved during activation? maybe do a NeuronState (like in the acyclic
+                //       network)
+                double neuronInput = activationFunction.computeInverse(
+                        neuronOutput,
+                        activationFunctionParameters);
+
+                double expectedNueronInput = activationFunction.computeInverse(
+                        neuronExpectedOutput,
+                        activationFunctionParameters);
+
+                throw new NotImplementedException();
+            }
+
+            curOutputs = nextOutputs;
+            curExpectedOutputs = nextExpectedOutputs;
+        }
+    }
+
+    public double computeError(Collection<Double> outputs, Collection<Double> expectedOutputs) {
+
+        if (properties.outputCount != outputs.size()) {
+            throw new IllegalArgumentException("Incorrect number of outputs");
+        }
+        if (properties.outputCount != expectedOutputs.size()) {
+            throw new IllegalArgumentException("Incorrect number of expected outputs");
+        }
+
+        Iterator<Double> outputIterator = outputs.iterator();
+        Iterator<Double> expectedOutputIterator = expectedOutputs.iterator();
+
+        double error = 0.0;
+
+        while (outputIterator.hasNext()) {
+
+            double output = outputIterator.next();
+            double expectedOutput = expectedOutputIterator.next();
+
+            double difference = expectedOutput - output;
+            double outputError = 0.5 * (difference * difference);
+
+            error += outputError;
+        }
+
+        return error;
     }
 
     public FeedForwardNeuralNet deepClone() {

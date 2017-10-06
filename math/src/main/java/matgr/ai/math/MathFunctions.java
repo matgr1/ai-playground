@@ -56,7 +56,11 @@ public class MathFunctions {
 
     }
 
-    public static double sigmoid(double d) {
-        return 1.0 / (1.0 + Math.exp(-d));
+    public static double sigmoid(double x) {
+        return 1.0 / (1.0 + Math.exp(-x));
+    }
+
+    public static double logit(double x) {
+        return Math.log(x / (1 - x));
     }
 }
