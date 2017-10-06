@@ -24,6 +24,8 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
     private final NeuronMap<NeuronT> writableNeurons;
     private final ConnectionMap<ConnectionT> writableConnections;
 
+    private long version;
+
     public final ReadOnlyNeuronMap<NeuronT> neurons;
     public final ReadOnlyConnectionMap<ConnectionT> connections;
 
@@ -56,6 +58,8 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
 
             writableNeurons.addNeuron(outputNeuron);
         }
+
+        this.version = 0;
     }
 
     protected CyclicNeuralNet(CyclicNeuralNet<ConnectionT, NeuronT> other) {
@@ -78,6 +82,8 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
             ConnectionT connectionClone = Connection.deepClone(connection);
             addConnection(connectionClone);
         }
+
+        this.version = other.version;
     }
 
     private CyclicNeuralNet(NeuronFactory<NeuronT> neuronFactory,
@@ -102,6 +108,10 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
 
     public NeuronT biasNeuron() {
         return neurons.getSingle(NeuronType.Bias);
+    }
+
+    public long version() {
+        return version;
     }
 
     public static <
@@ -136,17 +146,22 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
 
     public boolean removeHiddenNeuron(long neuronId) {
 
-        int incomingCount = writableConnections.getIncomingConnectionCount(neuronId);
-        int outgoingCount = writableConnections.getIncomingConnectionCount(neuronId);
+        try {
 
-        int connectionCount = incomingCount + outgoingCount;
+            int incomingCount = writableConnections.getIncomingConnectionCount(neuronId);
+            int outgoingCount = writableConnections.getIncomingConnectionCount(neuronId);
 
-        if (connectionCount > 0) {
-            throw new IllegalStateException(
-                    String.format("Cannot remove neuron, it is in use by %d connections", connectionCount));
+            int connectionCount = incomingCount + outgoingCount;
+
+            if (connectionCount > 0) {
+                throw new IllegalStateException(
+                        String.format("Cannot remove neuron, it is in use by %d connections", connectionCount));
+            }
+
+            return writableNeurons.removeNeuron(neuronId);
+        } finally {
+            version++;
         }
-
-        return writableNeurons.removeNeuron(neuronId);
     }
 
     public ConnectionT addConnection(long sourceNeuronId,
@@ -167,7 +182,13 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
 
     public boolean removeConnection(ConnectionT connection) {
 
-        return writableConnections.removeConnection(connection);
+        try {
+
+            return writableConnections.removeConnection(connection);
+
+        } finally {
+            version++;
+        }
     }
 
     public List<Double> activateSingle(List<Double> inputSet,
@@ -336,47 +357,60 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
 
     protected void addConnection(ConnectionT connection) {
 
-        NeuronState<NeuronT> sourceNeuron = writableNeurons.get(connection.sourceId);
-        if (sourceNeuron == null) {
-            throw new IllegalArgumentException("Source neuron not found");
-        }
+        try {
 
-        NeuronState<NeuronT> targetNeuron = writableNeurons.get(connection.targetId);
-        if (targetNeuron == null) {
-            throw new IllegalArgumentException("Target neuron not found");
-        }
+            NeuronState<NeuronT> sourceNeuron = writableNeurons.get(connection.sourceId);
+            if (sourceNeuron == null) {
+                throw new IllegalArgumentException("Source neuron not found");
+            }
 
-        if (targetNeuron.neuron.type == NeuronType.Bias) {
-            throw new IllegalArgumentException("Cannot target Bias neuron");
-        }
-        if (targetNeuron.neuron.type == NeuronType.Input) {
-            throw new IllegalArgumentException("Cannot target Input neurons");
-        }
+            NeuronState<NeuronT> targetNeuron = writableNeurons.get(connection.targetId);
+            if (targetNeuron == null) {
+                throw new IllegalArgumentException("Target neuron not found");
+            }
 
-        writableConnections.addConnection(connection);
+            if (targetNeuron.neuron.type == NeuronType.Bias) {
+                throw new IllegalArgumentException("Cannot target Bias neuron");
+            }
+            if (targetNeuron.neuron.type == NeuronType.Input) {
+                throw new IllegalArgumentException("Cannot target Input neurons");
+            }
+
+            writableConnections.addConnection(connection);
+
+        } finally {
+            version++;
+        }
     }
 
     private NeuronT addHiddenNeuron(Long neuronId,
                                     ActivationFunction activationFunction,
                                     double... activationFunctionParameters) {
-        NeuronT neuron;
 
-        long idToUse;
+        try {
 
-        if (null == neuronId) {
-            idToUse = writableNeurons.getNextFreeNeuronId();
-        } else {
-            idToUse = neuronId;
+            NeuronT neuron;
+
+            long idToUse;
+
+            if (null == neuronId) {
+                idToUse = writableNeurons.getNextFreeNeuronId();
+            } else {
+                idToUse = neuronId;
+            }
+
+            neuron = neuronFactory.createHidden(
+                    idToUse,
+                    activationFunction,
+                    activationFunctionParameters);
+
+            writableNeurons.addNeuron(neuron);
+
+            return neuron;
+
+        } finally {
+            version++;
         }
-
-        neuron = neuronFactory.createHidden(
-                idToUse,
-                activationFunction,
-                activationFunctionParameters);
-
-        writableNeurons.addNeuron(neuron);
-
-        return neuron;
     }
 
 }

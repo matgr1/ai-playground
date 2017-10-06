@@ -400,6 +400,8 @@ public class AppController {
         int currentExplosions = 0;
         int currentMinesCleared = 0;
 
+        long currentGenerationIteration = writableCombinedStats.getGenerationIteration();
+
         for (int i = 0; i < population.speciesCount(); i++) {
 
             NeatMineSweeperSpecies species = population.getSpecies(i);
@@ -442,15 +444,14 @@ public class AppController {
 
                 curStatsItem.setFitness(mineSweeper.getFitness());
 
-                // TODO: these don't make sense until prev species can be correlated with new species...
-                //curStatsItem.setExplosionsPerIteration(curStatsItem.getTotals().getExplosions() / (double) curStatsItem.getIteration());
-                //curStatsItem.setMinesClearedPerIteration(curStatsItem.getTotals().getCleared() / (double) curStatsItem.getIteration());
+                curStatsItem.setExplosionsPerIteration(mineSweeper.getExplosionCount() / (double) currentGenerationIteration);
+                curStatsItem.setMinesClearedPerIteration(mineSweeper.getClearedCount() / (double) currentGenerationIteration);
             }
         }
 
         // TODO: this is messy... clean it up
         writableCombinedStats.setIteration(writableCombinedStats.getIteration() + 1);
-        writableCombinedStats.setGenerationIteration(writableCombinedStats.getGenerationIteration() + 1);
+        writableCombinedStats.setGenerationIteration(currentGenerationIteration + 1);
 
         writableCombinedStats.getTotals().setExplosions(writableCombinedStats.getTotals().getExplosions() + currentExplosions);
         writableCombinedStats.getCurrentGeneration().setExplosions(writableCombinedStats.getCurrentGeneration().getExplosions() + currentExplosions);
@@ -467,7 +468,7 @@ public class AppController {
         writableCombinedStats.setSpeciesCount(fitnessSnapshot.getSpeciesCount());
 
         // NOTE: this is probably a little unclear... acquiring the lock later (within the runLater callback)
-        //       should be fine since that runs on a different thread...
+        //       should be fine/is required since that runs on a different thread...
         // TODO: this is kinda messy, find a better way...
         synchronized (statsLock) {
 
