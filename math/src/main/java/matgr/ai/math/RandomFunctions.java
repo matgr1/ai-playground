@@ -79,9 +79,11 @@ public final class RandomFunctions {
             return lst.get(index);
         }
 
+        // TODO: a binary search tree that is aware of subtree sizes could do this pretty efficiently...
+
         if (Collection.class.isAssignableFrom(itemsType)) {
 
-            logger.warning("Falling back to less efficient selection algorithm");
+            logger.fine("Falling back to less efficient selection algorithm");
 
             Collection<T> coll = (Collection<T>) items;
 
@@ -95,7 +97,7 @@ public final class RandomFunctions {
             return value.orElse(null);
         }
 
-        logger.warning("Falling back to less efficient selection algorithm");
+        logger.warning("Falling back to much less efficient selection algorithm");
 
         List<T> newList = new ArrayList<>();
         items.forEach(newList::add);

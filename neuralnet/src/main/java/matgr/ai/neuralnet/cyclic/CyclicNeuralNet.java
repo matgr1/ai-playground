@@ -233,7 +233,8 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
                     double inputValue = inputIterator.next();
 
                     if (Double.isNaN(inputValue)) {
-                        // TODO: pass in some sort of NaN handler...  if it fails, then set this to 0.0
+                        // TODO: pass in some sort of NaN handler (with the ability to completely bail out and
+                        //       return a status code from this function)...  if it fails, then set this to 0.0
                         inputValue = 0.0;
                     }
 
@@ -254,9 +255,10 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
                         targetNeuron.preSynapse += sourceNeuron.postSynapse * connection.weight;
 
                         if (Double.isNaN(targetNeuron.preSynapse)) {
-                            // TODO: pass in some sort of NaN handler... it should be given "sourceNeuron.postSynapse"
-                            //       and "connection.weight" (so it can decide what to do based on input values being
-                            //       infinite/NaN/etc... if it fails, then set this to 0.0
+                            // TODO: pass in some sort of NaN handler (with the ability to completely bail out and
+                            //       return a status code from this function)... it should be given
+                            //       "sourceNeuron.postSynapse" and "connection.weight" (so it can decide what to do
+                            //       based on input values being infinite/NaN/etc... if it fails, then set this to 0.0
                             targetNeuron.preSynapse = 0.0;
                         }
 
@@ -281,7 +283,8 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
 
                 if (Double.isNaN(value)) {
                     // NOTE: sigmoid shouldn't produce NaN, so fallback to this one for now...
-                    // TODO: pass in some sort of NaN handler... if it fails, then try this
+                    // TODO: pass in some sort of NaN handler (with the ability to completely bail out and return a
+                    //       status code from this function)... if it fails, then try this
                     value = KnownActivationFunctions.SIGMOID.compute(neuron.preSynapse);
                 }
 
