@@ -60,6 +60,14 @@ public class MineField {
         return -1;
     }
 
+    // public void removeMine(int index){
+    //     if ((index < 0) || (index >= mines.size())) {
+    //         throw new IllegalArgumentException("index is out of range");
+    //     }
+
+    //     writableMines.remove(index);
+    // }
+
     public void replaceMine(RandomGenerator random, int index, long currentIteration) {
         if ((index < 0) || (index >= mines.size())) {
             throw new IllegalArgumentException("index is out of range");

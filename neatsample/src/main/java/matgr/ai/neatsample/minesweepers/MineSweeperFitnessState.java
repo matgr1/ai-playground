@@ -19,10 +19,24 @@ class MineSweeperFitnessState {
 
     private int streak;
 
+    private int cleared;
+    private int exploded;
+
     public MineSweeperFitnessState(long currentIteration) {
         lastGoodHit = currentIteration;
         lastExplosion = -1;
         streak = 0;
+
+        cleared = 0;
+        exploded = 0;
+    }
+
+    public int getExplosionCount() {
+        return exploded;
+    }
+
+    public int getClearedCount() {
+        return cleared;
     }
 
     public double getFitness() {
@@ -31,55 +45,59 @@ class MineSweeperFitnessState {
 
     public void onMineHit(MineSweeperSettings settings, long currentIteration, boolean explodeyMine) {
 
-        if (explodeyMine) {
+       if (explodeyMine) {
 
-            lastExplosion = currentIteration;
+           exploded++;
 
-            if (!lastHitWasExplosion()) {
-                streak = 0;
-            }
+           lastExplosion = currentIteration;
 
-            double fitnessAdjustment = getBadFitnessAdjustment(streak);
-            fitness = fitness + fitnessAdjustment;
+           if (!lastHitWasExplosion()) {
+               streak = 0;
+           }
 
-            streak++;
+           double fitnessAdjustment = getBadFitnessAdjustment(streak);
+           fitness = fitness + fitnessAdjustment;
 
-        } else {
+           streak++;
 
-            lastGoodHit = currentIteration;
+       } else {
 
-            if (lastHitWasExplosion()) {
-                streak = 0;
-            }
+           cleared++;
 
-            double fitnessAdjustment = getGoodFitnessAdjustment(streak);
-            fitness = fitness + fitnessAdjustment;
+           lastGoodHit = currentIteration;
 
-            streak++;
-        }
+           if (lastHitWasExplosion()) {
+               streak = 0;
+           }
 
-        double fitnessAdjustment = getStarvationFitnessAdjustment(
-                currentIteration,
-                lastGoodHit,
-                settings.getDigestionPeriod(),
-                settings.maxStarvationFitnessAdjustment,
-                settings.getStarvationPeriod(),
-                settings.starvationSteepness);
+           double fitnessAdjustment = getGoodFitnessAdjustment(streak);
+           fitness = fitness + fitnessAdjustment;
 
-        fitness = fitness + fitnessAdjustment;
+           streak++;
+       }
+
+       double fitnessAdjustment = getStarvationFitnessAdjustment(
+               currentIteration,
+               lastGoodHit,
+               settings.getDigestionPeriod(),
+               settings.maxStarvationFitnessAdjustment,
+               settings.getStarvationPeriod(),
+               settings.starvationSteepness);
+
+       fitness = fitness + fitnessAdjustment;
     }
 
     public void onMineNotHit(MineSweeperSettings settings, long currentIteration) {
 
-        double fitnessAdjustment = getStarvationFitnessAdjustment(
-                currentIteration,
-                lastGoodHit,
-                settings.getDigestionPeriod(),
-                settings.maxStarvationFitnessAdjustment,
-                settings.getStarvationPeriod(),
-                settings.starvationSteepness);
+       double fitnessAdjustment = getStarvationFitnessAdjustment(
+               currentIteration,
+               lastGoodHit,
+               settings.getDigestionPeriod(),
+               settings.maxStarvationFitnessAdjustment,
+               settings.getStarvationPeriod(),
+               settings.starvationSteepness);
 
-        fitness = fitness + fitnessAdjustment;
+       fitness = fitness + fitnessAdjustment;
     }
 
     public boolean isDigesting(MineSweeperSettings settings, long currentIteration) {
@@ -99,35 +117,35 @@ class MineSweeperFitnessState {
         return true;
     }
 
-    private double getGoodFitnessAdjustment(int streak) {
-        return baselineGoodFitnessAdjustment + (streak * goodFitnessStreakAdjustment);
-    }
+   private double getGoodFitnessAdjustment(int streak) {
+       return baselineGoodFitnessAdjustment + (streak * goodFitnessStreakAdjustment);
+   }
 
-    private double getBadFitnessAdjustment(int streak) {
-        return baselineBadFitnessAdjustment + (streak * badFitnessStreakAdjustment);
-    }
+   private double getBadFitnessAdjustment(int streak) {
+       return baselineBadFitnessAdjustment + (streak * badFitnessStreakAdjustment);
+   }
 
-    private double getStarvationFitnessAdjustment(long currentIteration,
-                                                  long lastGoodHit,
-                                                  long digestionPeriod,
-                                                  double maxStarvationFitnessAdjustment,
-                                                  double starvationPeriod,
-                                                  double starvationSteepness) {
+   private double getStarvationFitnessAdjustment(long currentIteration,
+                                                 long lastGoodHit,
+                                                 long digestionPeriod,
+                                                 double maxStarvationFitnessAdjustment,
+                                                 double starvationPeriod,
+                                                 double starvationSteepness) {
 
-        if (lastGoodHit < 0) {
-            lastGoodHit = 0;
-        }
+       if (lastGoodHit < 0) {
+           lastGoodHit = 0;
+       }
 
-        long timeSinceMealComplete = Math.max(0, currentIteration - (lastGoodHit + digestionPeriod));
-        return maxStarvationFitnessAdjustment * MathFunctions.sigmoid(starvationSteepness * (timeSinceMealComplete - starvationPeriod));
-    }
+       long timeSinceMealComplete = Math.max(0, currentIteration - (lastGoodHit + digestionPeriod));
+       return maxStarvationFitnessAdjustment * MathFunctions.sigmoid(starvationSteepness * (timeSinceMealComplete - starvationPeriod));
+   }
 
-    private boolean lastHitWasExplosion() {
+   private boolean lastHitWasExplosion() {
 
-        if (lastExplosion < 0) {
-            return false;
-        }
+       if (lastExplosion < 0) {
+           return false;
+       }
 
-        return lastExplosion > lastGoodHit;
-    }
+       return lastExplosion > lastGoodHit;
+   }
 }

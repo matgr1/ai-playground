@@ -24,8 +24,8 @@ public class KnownActivationFunctions {
         SIGMOID = addFunction(SigmoidActivationFunction.INSTANCE);
         SOFT_PLUS = addFunction(SoftplusActivationFunction.INSTANCE);
         TANH = addFunction(TanhActivationFunction.INSTANCE);
-        RELU= addFunction(ReluActivationFunction.INSTANCE);
-        GAUSSIAN= addFunction(GaussianActivationFunction.INSTANCE);
+        RELU = addFunction(ReluActivationFunction.INSTANCE);
+        GAUSSIAN = addFunction(GaussianActivationFunction.INSTANCE);
     }
 
     private static <TFunction extends ActivationFunction> TFunction addFunction(TFunction function) {

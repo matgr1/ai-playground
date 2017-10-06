@@ -64,6 +64,14 @@ public abstract class MineSweeper<GenomeT extends MineSweeperGenome>
         return direction;
     }
 
+    public int getExplosionCount() {
+        return fitnessState.getExplosionCount();
+    }
+
+    public int getClearedCount() {
+        return fitnessState.getClearedCount();
+    }
+
     public double getFitness() {
         return fitnessState.getFitness();
     }

@@ -16,6 +16,7 @@ public class NeatMineSweeper extends MineSweeper<NeatMineSweeperGenome> {
     protected List<Double> activateNeuralNet(List<Double> inputs, double bias) {
 
         // TODO: pass these in?
+        // TODO: what is the right number of steps? should it be based on the max length from an input to output?
         final int maxStepsPerActivation = 10;
         final boolean resetStateBeforeActivation = false;
 

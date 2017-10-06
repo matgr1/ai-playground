@@ -277,6 +277,9 @@ public class AppController {
         MineSweeperStatsItem stats = allStats.get(sweeper.genome.genomeId());
         setStats(stats);
 
+        // TODO: this is not safe... it draws the minefield which may be getting modified by the update thread... it
+        //       happens to work OK now since the collection is not modified since mines are replace... won't work
+        //       otherwise (and should be fixed regardless)
         MineSweeperScene.draw(mainCanvasSize, mainCanvasGraphics, sweeper, settings, iteration);
 
         Dimension size = new Dimension(
@@ -416,7 +419,7 @@ public class AppController {
                     mineSweeper.onMineHit(writableCombinedStats.getIteration(), true);
 
                     currentExplosions++;
-                    curStatsItem.setExplosions(curStatsItem.getExplosions() + 1);
+                    curStatsItem.setExplosions(mineSweeper.getExplosionCount());
 
                 } else {
 
@@ -425,10 +428,11 @@ public class AppController {
                     if (mineIndex >= 0) {
 
                         mineSweeper.onMineHit(writableCombinedStats.getIteration(), false);
+                        //mineField.removeMine(mineIndex);
                         mineField.replaceMine(random, mineIndex, writableCombinedStats.getIteration());
 
                         currentMinesCleared++;
-                        curStatsItem.setCleared(curStatsItem.getCleared() + 1);
+                        curStatsItem.setCleared(mineSweeper.getClearedCount());
 
                     } else {
 

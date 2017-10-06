@@ -8,8 +8,15 @@ import matgr.ai.neuralnet.activation.KnownActivationFunctions;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neuron> {
+
+    private final static Logger logger;
+
+    static {
+        logger = Logger.getLogger(CyclicNeuralNet.class.getName());
+    }
 
     private final NeuronFactory<NeuronT> neuronFactory;
     private final ConnectionFactory<ConnectionT> connectionFactory;
@@ -215,6 +222,8 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
         NeuronState<NeuronT> biasNeuron = writableNeurons.getSingle(NeuronType.Bias);
         biasNeuron.postSynapse = bias;
 
+        boolean completed = false;
+
         for (int step = 0; step < numSteps; step++) {
 
             if (step < inputSets.size()) {
@@ -262,7 +271,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
                             targetNeuron.preSynapse = 0.0;
                         }
 
-                        if (Double.isNaN(targetNeuron.preSynapse)){
+                        if (Double.isNaN(targetNeuron.preSynapse)) {
                             throw new IllegalStateException("NaN pre-synapse value");
                         }
                     }
@@ -288,10 +297,11 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
                     value = KnownActivationFunctions.SIGMOID.compute(neuron.preSynapse);
                 }
 
-                if (Double.isNaN(value)){
+                if (Double.isNaN(value)) {
                     throw new IllegalStateException("NaN activation output");
                 }
 
+                // NOTE: this may only help for very simple networks...
                 if (!MathFunctions.fuzzyCompare(value, neuron.postSynapse)) {
                     moreWork = true;
                 }
@@ -301,8 +311,13 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
             }
 
             if (!moreWork) {
+                completed = true;
                 break;
             }
+        }
+
+        if (!completed) {
+            logger.fine("Activation reached max steps without converging");
         }
 
         // read the outputs from the output neurons
