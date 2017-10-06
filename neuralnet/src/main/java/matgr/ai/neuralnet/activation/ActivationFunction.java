@@ -1,9 +1,9 @@
 package matgr.ai.neuralnet.activation;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 
 public abstract class ActivationFunction {
 
@@ -12,24 +12,15 @@ public abstract class ActivationFunction {
     public final List<ParameterMetadata> parameters;
 
     protected ActivationFunction(String name, ParameterMetadata... parameters) {
-        this(
-                name,
-                consumer -> {
-                    for (ParameterMetadata parameter : parameters) {
-                        consumer.accept(parameter);
-                    }
-                });
+        this(name, Arrays.asList(parameters));
     }
 
     protected ActivationFunction(String name, Iterable<ParameterMetadata> parameters) {
-        this(name, parameters::forEach);
-    }
 
-    private ActivationFunction(String name, Consumer<Consumer<ParameterMetadata>> iterateParameters) {
         this.name = name;
 
         List<ParameterMetadata> writableParameters = new ArrayList<>();
-        iterateParameters.accept(writableParameters::add);
+        parameters.forEach(writableParameters::add);
 
         this.parameters = Collections.unmodifiableList(writableParameters);
     }
