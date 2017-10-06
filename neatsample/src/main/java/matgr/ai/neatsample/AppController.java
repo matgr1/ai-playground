@@ -15,6 +15,8 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Slider;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
 import matgr.ai.common.NestedIterator;
 import matgr.ai.genetic.EvolutionContext;
 import matgr.ai.genetic.PopulationFitnessSnapshot;
@@ -41,6 +43,12 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 
 public class AppController {
+
+    @FXML
+    private GridPane mainGrid;
+
+    @FXML
+    private ColumnConstraints graphColumn;
 
     @FXML
     private Slider graphZoomSlider;
@@ -282,8 +290,15 @@ public class AppController {
         //       otherwise (and should be fixed regardless)
         MineSweeperScene.draw(mainCanvasSize, mainCanvasGraphics, sweeper, settings, iteration);
 
+        // TODO: this is some serious hackery... can't seem to get the size of the singnode right, there must be
+        //       a better way...
+
+        double mainWidth = mainGrid.getWidth();
+        double graphPercent = graphColumn.getPercentWidth() * 0.01;
+        int targetWidth = (int)Math.floor(mainWidth * graphPercent);
+
         Dimension size = new Dimension(
-                (int) Math.floor(graphContainerContainer.getWidth()),
+                targetWidth,
                 (int) Math.floor(graphContainerContainer.getHeight()));
 
         graphContainer.resize(size.width, size.height);
