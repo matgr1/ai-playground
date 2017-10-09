@@ -25,19 +25,14 @@ public abstract class ActivationFunction {
         this.parameters = Collections.unmodifiableList(writableParameters);
     }
 
-    public double compute(double x, double... parameters) {
+    public double compute(double activationInput, double... parameters) {
         validateParameters(parameters);
-        return computeActivation(x, parameters);
+        return computeActivation(activationInput, parameters);
     }
 
-    public double computeInverse(double x, double... parameters) {
+    public double computeDerivativeFromActivationOutput(double activationOutput, double... parameters) {
         validateParameters(parameters);
-        return computeActivationInverse(x, parameters);
-    }
-
-    public double computeDerivative(double x, double... parameters) {
-        validateParameters(parameters);
-        return computeActivationDerivative(x, parameters);
+        return computeActivationDerivativeFromOutput(activationOutput, parameters);
     }
 
     public void validateParameters(double... parameters) {
@@ -53,9 +48,7 @@ public abstract class ActivationFunction {
 
     public abstract double[] defaultParameters();
 
-    protected abstract double computeActivation(double x, double[] parameters);
+    protected abstract double computeActivation(double activationInput, double[] parameters);
 
-    protected abstract double computeActivationInverse(double x, double[] parameters);
-
-    protected abstract double computeActivationDerivative(double x, double[] parameters);
+    protected abstract double computeActivationDerivativeFromOutput(double activationOutput, double[] parameters);
 }

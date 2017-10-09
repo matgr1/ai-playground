@@ -24,7 +24,7 @@ public class FeedForwardNeuronLayer {
             FeedForwardNeuron neuron = new FeedForwardNeuron(inputsPerNeuron);
             writableNeurons.add(neuron);
 
-            neuronWeights += neuron.weights.size();
+            neuronWeights += neuron.incomingWeights.size();
             biasWeights++;
         }
 

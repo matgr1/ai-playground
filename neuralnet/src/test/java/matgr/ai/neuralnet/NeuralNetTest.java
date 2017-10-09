@@ -39,19 +39,19 @@ public class NeuralNetTest extends TestCase {
     public void test1() {
 
         final int inputCount = 2;
-        final int outputCount = 2;
+        final int outputCount = 4;
 
         final int hiddenLayers = 1;
-        final int neuronsPerHiddenLayer = 4;
+        final int neuronsPerHiddenLayer = 5;
 
-        final int maxSteps = 100;
-        final double maxError = 0.01;
+        final int maxSteps = 1000000;
+        final double maxError = 0.0001;
 
         final int sqrtSetCount = 2;
 
         final double bias = 1;
 
-        final double learningRate = 0.01;
+        final double learningRate = 0.5;
 
         ActivationFunction activationFunction = KnownActivationFunctions.SIGMOID;
         double[] activationFunctionParameters = activationFunction.defaultParameters();
@@ -70,26 +70,57 @@ public class NeuralNetTest extends TestCase {
 
         List<TrainingSet> trainingSets = getTrainingSets(sqrtSetCount);
 
+        double error = Double.POSITIVE_INFINITY;
+        double bestError = Double.POSITIVE_INFINITY;
+
         for (int step = 0; step < maxSteps; step++) {
+
+            double curStepMaxError = Double.NEGATIVE_INFINITY;
 
             for (TrainingSet set : trainingSets) {
 
-                double error = Double.POSITIVE_INFINITY;
+                neuralNet.activate(set.inputs, bias);
 
-                List<Double> outputs = neuralNet.activate(set.inputs, bias);
+                error = neuralNet.getCurrentError(set.expectedOutputs);
+                curStepMaxError = Math.max(curStepMaxError, error);
 
-                error = neuralNet.computeError(outputs, set.expectedOutputs);
+                // TODO: put this back?
+                //if (error > maxError) {
+                    neuralNet.backPropagate(learningRate, bias, set.expectedOutputs);
+                //}
+            }
 
-                if (error < maxError) {
-                    break;
-                }
+            error = curStepMaxError;
 
-                neuralNet.backPropagate(learningRate, outputs, set.expectedOutputs);
+            bestError = Math.min(bestError, curStepMaxError);
+
+            // TODO: error calculation should maybe be different... maybe max for any individual output/set?
+            if (error < maxError) {
+                break;
             }
         }
 
+        // TODO: this loop is unneeded...
+        for (TrainingSet set : trainingSets) {
 
-        //assertTrue(error < maxError);
+            neuralNet.activate(set.inputs, bias);
+
+            List<Double> outputs = neuralNet.getCurrentOutputs();
+            double err = neuralNet.getCurrentError(set.expectedOutputs);
+
+            System.out.println(set.inputs);
+            System.out.println(set.expectedOutputs);
+            System.out.println(outputs);
+            System.out.println(err);
+            System.out.println();
+        }
+
+        List<Double> testy = new ArrayList<>();
+        testy.add(0.75);
+        testy.add(0.85);
+        List<Double> testy2 = neuralNet.activate(testy, bias);
+
+        assertTrue(error < maxError);
     }
 
     private List<TrainingSet> getTrainingSets(int sqrtCount) {
@@ -119,10 +150,15 @@ public class NeuralNetTest extends TestCase {
             inputs.add((double) inputB);
 
             double xorOutput = (double) (inputA ^ inputB);
+            // TODO: can only produce numbers in the range 0-1, so &-ing with 0x1 for now...
+            double nandOutput = (double) (0x1 & ~(inputA & inputB));
             double andOutput = (double) (inputA & inputB);
+            double orOutput = (double) (inputA | inputB);
 
             expectedOutputs.add(xorOutput);
+            expectedOutputs.add(nandOutput);
             expectedOutputs.add(andOutput);
+            expectedOutputs.add(orOutput);
         }
     }
 }

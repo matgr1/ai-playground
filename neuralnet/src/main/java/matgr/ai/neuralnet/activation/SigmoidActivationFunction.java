@@ -16,18 +16,12 @@ public class SigmoidActivationFunction extends ActivationFunction {
     }
 
     @Override
-    protected double computeActivation(double x, double[] parameters) {
-        return MathFunctions.sigmoid(x);
+    protected double computeActivation(double activationInput, double[] parameters) {
+        return MathFunctions.sigmoid(activationInput);
     }
 
     @Override
-    protected double computeActivationInverse(double x, double[] parameters) {
-        return MathFunctions.logit(x);
-    }
-
-    @Override
-    protected double computeActivationDerivative(double x, double[] parameters) {
-        double value = MathFunctions.sigmoid(x);
-        return value * (1 - value);
+    protected double computeActivationDerivativeFromOutput(double activationOutput, double[] parameters) {
+        return activationOutput * (1 - activationOutput);
     }
 }

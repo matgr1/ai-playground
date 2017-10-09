@@ -10,25 +10,22 @@ import java.util.List;
 
 public class FeedForwardNeuron {
 
-    private final List<Double> writableWeights;
+    private final List<Double> writableIncomingWeights;
 
-    public final List<Double> weights;
+    public final List<Double> incomingWeights;
 
-    public double biasWeight;
+    public double incomingBiasWeight;
+
+    double preSynapse;
+    double postSynapse;
 
     public FeedForwardNeuron(int inputCount) {
 
-        this.writableWeights = Arrays.asList(new Double[inputCount]);
-        this.weights = Collections.unmodifiableList(writableWeights);
-    }
+        this.writableIncomingWeights = Arrays.asList(new Double[inputCount]);
+        this.incomingWeights = Collections.unmodifiableList(writableIncomingWeights);
 
-    public void randomize(RandomGenerator random){
-
-        for (int i = 0; i < this.weights.size(); i++) {
-            this.writableWeights.set(i, getInitialWeight(random));
-        }
-
-        this.biasWeight = getInitialWeight(random);
+        this.preSynapse = 0.0;
+        this.postSynapse = 0.0;
     }
 
     private FeedForwardNeuron(FeedForwardNeuron other) {
@@ -37,30 +34,45 @@ public class FeedForwardNeuron {
             throw new IllegalArgumentException("other neuron not provided");
         }
 
-        this.writableWeights = new ArrayList<>();
-        this.weights = Collections.unmodifiableList(writableWeights);
+        this.writableIncomingWeights = new ArrayList<>();
+        this.incomingWeights = Collections.unmodifiableList(writableIncomingWeights);
 
-        this.writableWeights.addAll(other.weights);
+        this.writableIncomingWeights.addAll(other.incomingWeights);
 
-        this.biasWeight = other.biasWeight;
+        this.incomingBiasWeight = other.incomingBiasWeight;
 
+        this.preSynapse = other.preSynapse;
+        this.postSynapse = other.postSynapse;
+    }
+
+    public void randomize(RandomGenerator random) {
+
+        for (int i = 0; i < this.incomingWeights.size(); i++) {
+            this.writableIncomingWeights.set(i, getInitialWeight(random));
+        }
+
+        this.incomingBiasWeight = getInitialWeight(random);
     }
 
     public FeedForwardNeuron deepClone() {
         return new FeedForwardNeuron(this);
     }
 
-    public void setWeights(List<Double> weights, double biasWeight) {
+    public void setIncomingWeight(int index, double weight) {
+        writableIncomingWeights.set(index, weight);
+    }
 
-        if (weights.size() != this.writableWeights.size()) {
-            throw new IllegalArgumentException("Incorrect number of writableWeights");
+    public void setIncomingWeights(List<Double> weights, double biasWeight) {
+
+        if (weights.size() != this.writableIncomingWeights.size()) {
+            throw new IllegalArgumentException("Incorrect number of writableIncomingWeights");
         }
 
         for (int i = 0; i < weights.size(); i++) {
-            this.writableWeights.set(i, weights.get(i));
+            this.writableIncomingWeights.set(i, weights.get(i));
         }
 
-        this.biasWeight = biasWeight;
+        this.incomingBiasWeight = biasWeight;
 
     }
 

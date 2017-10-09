@@ -56,16 +56,14 @@ public abstract class FeedForwardNeuralNetGenome extends NumericGenome {
 
                 List<Double> weights = new ArrayList<>();
 
-                for (int i = 0; i < neuron.weights.size(); i++) {
+                for (int i = 0; i < neuron.incomingWeights.size(); i++) {
                     weights.add(this.getGene(weightIndex++));
                 }
 
                 double bias = this.getGene(weightIndex++);
 
-                neuron.setWeights(weights, bias);
-
+                neuron.setIncomingWeights(weights, bias);
             }
-
         }
 
         // TODO: would be nice to check this in constructor as well... even better to make it so the numbers

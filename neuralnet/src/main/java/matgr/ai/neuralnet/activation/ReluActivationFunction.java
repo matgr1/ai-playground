@@ -16,17 +16,12 @@ public class ReluActivationFunction extends ActivationFunction {
     }
 
     @Override
-    protected double computeActivation(double x, double[] parameters) {
-        return Math.max(0, x);
+    protected double computeActivation(double activationInput, double[] parameters) {
+        return Math.max(0, activationInput);
     }
 
     @Override
-    protected double computeActivationInverse(double x, double[] parameters) {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    protected double computeActivationDerivative(double x, double[] parameters) {
+    protected double computeActivationDerivativeFromOutput(double activationOutput, double[] parameters) {
         throw new NotImplementedException();
     }
 }
