@@ -45,7 +45,7 @@ public class NeuralNetTest extends TestCase {
         final int neuronsPerHiddenLayer = 5;
 
         final int maxSteps = 1000000;
-        final double maxError = 0.0001;
+        final double maxError = 0.001;
 
         final int sqrtSetCount = 2;
 
@@ -99,26 +99,6 @@ public class NeuralNetTest extends TestCase {
                 break;
             }
         }
-
-        // TODO: this loop is unneeded...
-        for (TrainingSet set : trainingSets) {
-
-            neuralNet.activate(set.inputs, bias);
-
-            List<Double> outputs = neuralNet.getCurrentOutputs();
-            double err = neuralNet.getCurrentError(set.expectedOutputs);
-
-            System.out.println(set.inputs);
-            System.out.println(set.expectedOutputs);
-            System.out.println(outputs);
-            System.out.println(err);
-            System.out.println();
-        }
-
-        List<Double> testy = new ArrayList<>();
-        testy.add(0.75);
-        testy.add(0.85);
-        List<Double> testy2 = neuralNet.activate(testy, bias);
 
         assertTrue(error < maxError);
     }
