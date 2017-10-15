@@ -4,9 +4,9 @@ import com.jgraph.layout.JGraphFacade;
 import com.jgraph.layout.hierarchical.JGraphHierarchicalLayout;
 import javafx.embed.swing.SwingNode;
 import matgr.ai.neat.NeatNeuralNet;
-import matgr.ai.neuralnet.cyclic.Connection;
+import matgr.ai.neuralnet.Connection;
 import matgr.ai.neuralnet.cyclic.CyclicNeuralNet;
-import matgr.ai.neuralnet.cyclic.Neuron;
+import matgr.ai.neuralnet.Neuron;
 import org.jgraph.JGraph;
 import org.jgraph.graph.DefaultGraphCell;
 import org.jgraph.graph.GraphConstants;
@@ -48,7 +48,7 @@ public class NeuralNetGrapher {
         graphControl.setAutoscrolls(true);
 
         // TODO: maybe do a scrollpane in JavaFX-land?
-        graphControlContainer = new JPanel();//jgraph);
+        graphControlContainer = new JPanel();
         graphControlContainer.add(graphControl);
     }
 

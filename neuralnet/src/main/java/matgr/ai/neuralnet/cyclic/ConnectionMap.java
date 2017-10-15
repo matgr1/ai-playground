@@ -1,6 +1,7 @@
 package matgr.ai.neuralnet.cyclic;
 
 import matgr.ai.common.NestedIterator;
+import matgr.ai.neuralnet.Connection;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;

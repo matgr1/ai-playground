@@ -1,5 +1,8 @@
 package matgr.ai.neat;
 
+import matgr.ai.neuralnet.DefaultNeuronFactory;
+import matgr.ai.neuralnet.Neuron;
+import matgr.ai.neuralnet.NeuronParameters;
 import matgr.ai.neuralnet.cyclic.*;
 
 import java.util.SortedMap;
@@ -7,10 +10,9 @@ import java.util.TreeMap;
 
 public class NeatNeuralNet extends CyclicNeuralNet<NeatConnection, Neuron> {
 
-    // TODO: do this better?
     private SortedMap<Long, NeatConnection> connectionMap;
 
-    public NeatNeuralNet(int inputCount, Iterable<OutputNeuronParameters> outputNeuronsParameters) {
+    public NeatNeuralNet(int inputCount, Iterable<NeuronParameters> outputNeuronsParameters) {
 
         super(new DefaultNeuronFactory(), new NeatConnectionFactory(), inputCount, outputNeuronsParameters);
     }
@@ -55,6 +57,7 @@ public class NeatNeuralNet extends CyclicNeuralNet<NeatConnection, Neuron> {
         return super.removeConnection(connection);
     }
 
+    // TODO: do this better, it's a bit of a hack...
     SortedMap<Long, NeatConnection> connectionMap() {
         if (connectionMap == null) {
             connectionMap = new TreeMap<>();

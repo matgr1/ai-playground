@@ -7,9 +7,9 @@ import matgr.ai.neat.NeatConnection;
 import matgr.ai.neat.NeatGenome;
 import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.activation.KnownActivationFunctions;
-import matgr.ai.neuralnet.cyclic.ConnectionIds;
-import matgr.ai.neuralnet.cyclic.Neuron;
-import matgr.ai.neuralnet.cyclic.NeuronType;
+import matgr.ai.neat.ConnectionIds;
+import matgr.ai.neuralnet.Neuron;
+import matgr.ai.neuralnet.NeuronType;
 import matgr.ai.neuralnet.cyclic.ReadOnlyConnectionMap;
 import org.apache.commons.math3.random.RandomGenerator;
 

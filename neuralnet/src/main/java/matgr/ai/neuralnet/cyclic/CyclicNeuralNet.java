@@ -2,6 +2,7 @@ package matgr.ai.neuralnet.cyclic;
 
 import com.google.common.collect.Iterators;
 import matgr.ai.math.MathFunctions;
+import matgr.ai.neuralnet.*;
 import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.activation.KnownActivationFunctions;
 
@@ -32,7 +33,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
     public CyclicNeuralNet(NeuronFactory<NeuronT> neuronFactory,
                            ConnectionFactory<ConnectionT> connectionFactory,
                            int inputCount,
-                           Iterable<OutputNeuronParameters> outputNeuronsParameters) {
+                           Iterable<NeuronParameters> outputNeuronsParameters) {
 
         this(neuronFactory, connectionFactory);
 
@@ -49,7 +50,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
             writableNeurons.addNeuron(inputNeuron);
         }
 
-        for (OutputNeuronParameters parameters : outputNeuronsParameters) {
+        for (NeuronParameters parameters : outputNeuronsParameters) {
 
             NeuronT outputNeuron = neuronFactory.createOutput(
                     writableNeurons.getNextFreeNeuronId(),
@@ -68,7 +69,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
 
         // TODO: can this be relaxed?
         if (other.getClass() != this.getClass()) {
-            throw new IllegalArgumentException("Cannot copy graph of a different type");
+            throw new IllegalArgumentException("Cannot copy neural net of a different type");
         }
 
         for (NeuronState<NeuronT> neuron : other.writableNeurons.values()) {
@@ -159,7 +160,9 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
             }
 
             return writableNeurons.removeNeuron(neuronId);
+
         } finally {
+
             version++;
         }
     }
@@ -187,6 +190,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
             return writableConnections.removeConnection(connection);
 
         } finally {
+
             version++;
         }
     }
@@ -373,6 +377,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
             writableConnections.addConnection(connection);
 
         } finally {
+
             version++;
         }
     }
@@ -403,6 +408,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
             return neuron;
 
         } finally {
+
             version++;
         }
     }

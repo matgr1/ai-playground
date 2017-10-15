@@ -8,8 +8,8 @@ import matgr.ai.neat.crossover.NeatCrossoverSettings;
 import matgr.ai.neat.mutation.NeatMutationFunctions;
 import matgr.ai.neat.mutation.NeatMutationSettings;
 import matgr.ai.neat.speciation.SpeciationStrategy;
-import matgr.ai.neuralnet.cyclic.Neuron;
-import matgr.ai.neuralnet.cyclic.NeuronType;
+import matgr.ai.neuralnet.Neuron;
+import matgr.ai.neuralnet.NeuronType;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.ArrayList;

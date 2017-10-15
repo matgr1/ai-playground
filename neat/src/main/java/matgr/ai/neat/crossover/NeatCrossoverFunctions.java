@@ -8,7 +8,7 @@ import matgr.ai.math.RandomFunctions;
 import matgr.ai.neat.NeatConnection;
 import matgr.ai.neat.NeatGenome;
 import matgr.ai.neat.NeatNeuralNet;
-import matgr.ai.neuralnet.cyclic.Neuron;
+import matgr.ai.neuralnet.Neuron;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.SortedMap;

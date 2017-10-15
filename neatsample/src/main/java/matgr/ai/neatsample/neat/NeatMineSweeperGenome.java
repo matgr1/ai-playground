@@ -3,7 +3,7 @@ package matgr.ai.neatsample.neat;
 import matgr.ai.neat.NeatGenome;
 import matgr.ai.neatsample.minesweepers.MineField;
 import matgr.ai.neatsample.minesweepers.MineSweeperGenome;
-import matgr.ai.neuralnet.cyclic.OutputNeuronParameters;
+import matgr.ai.neuralnet.NeuronParameters;
 
 import java.util.UUID;
 
@@ -13,7 +13,7 @@ public class NeatMineSweeperGenome extends NeatGenome implements MineSweeperGeno
 
     public NeatMineSweeperGenome(MineField mineField,
                                  int inputCount,
-                                 Iterable<OutputNeuronParameters> outputNodesParameters) {
+                                 Iterable<NeuronParameters> outputNodesParameters) {
         super(inputCount, outputNodesParameters);
         this.mineField = mineField;
     }

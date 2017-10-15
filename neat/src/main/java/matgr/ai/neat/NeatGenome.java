@@ -1,6 +1,7 @@
 package matgr.ai.neat;
 
 import matgr.ai.genetic.Genome;
+import matgr.ai.neuralnet.NeuronParameters;
 import matgr.ai.neuralnet.cyclic.*;
 
 import java.util.UUID;
@@ -17,7 +18,7 @@ public class NeatGenome implements Genome {
     public final NeatNeuralNet neuralNet;
 
     public NeatGenome(int inputCount,
-                      Iterable<OutputNeuronParameters> outputNodesParameters) {
+                      Iterable<NeuronParameters> outputNodesParameters) {
 
         this(
                 new NeatNeuralNet(inputCount, outputNodesParameters),

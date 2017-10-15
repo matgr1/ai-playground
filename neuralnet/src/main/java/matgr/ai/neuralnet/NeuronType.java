@@ -1,4 +1,4 @@
-package matgr.ai.neuralnet.cyclic;
+package matgr.ai.neuralnet;
 
 public enum NeuronType {
     Bias,

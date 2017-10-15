@@ -1,14 +1,14 @@
-package matgr.ai.neuralnet.cyclic;
+package matgr.ai.neuralnet;
 
 import matgr.ai.neuralnet.activation.ActivationFunction;
 
-public class OutputNeuronParameters {
+public class NeuronParameters {
 
     public final ActivationFunction activationFunction;
 
     public final double[] activationFunctionParameters;
 
-    public OutputNeuronParameters(ActivationFunction activationFunction, double... activationFunctionParameters) {
+    public NeuronParameters(ActivationFunction activationFunction, double... activationFunctionParameters) {
 
         activationFunction.validateParameters(activationFunctionParameters);
 

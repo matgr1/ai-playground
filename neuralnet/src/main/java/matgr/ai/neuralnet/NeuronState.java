@@ -1,6 +1,6 @@
-package matgr.ai.neuralnet.cyclic;
+package matgr.ai.neuralnet;
 
-class NeuronState<NeuronT extends Neuron> {
+public class NeuronState<NeuronT extends Neuron> {
 
     public final NeuronT neuron;
 

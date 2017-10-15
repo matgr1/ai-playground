@@ -1,4 +1,4 @@
-package matgr.ai.neuralnet.cyclic;
+package matgr.ai.neuralnet;
 
 public interface ConnectionFactory<ConnectionT extends Connection> {
 

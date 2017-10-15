@@ -3,14 +3,13 @@ package matgr.ai.neatsample.neat;
 import matgr.ai.genetic.EvolutionContext;
 import matgr.ai.math.clustering.Cluster;
 import matgr.ai.neat.NeatGeneticAlgorithm;
-import matgr.ai.neat.NeatGenome;
 import matgr.ai.neat.mutation.NeatMutationFunctions;
 import matgr.ai.neatsample.minesweepers.MineField;
 import matgr.ai.neatsample.minesweepers.MineSweeperSettings;
 import matgr.ai.neuralnet.activation.ActivationFunction;
-import matgr.ai.neuralnet.cyclic.Neuron;
-import matgr.ai.neuralnet.cyclic.NeuronType;
-import matgr.ai.neuralnet.cyclic.OutputNeuronParameters;
+import matgr.ai.neuralnet.Neuron;
+import matgr.ai.neuralnet.NeuronType;
+import matgr.ai.neuralnet.NeuronParameters;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.ArrayList;
@@ -62,14 +61,14 @@ public class NeatMineSweeperGeneticAlgorithm extends NeatGeneticAlgorithm<
         int inputCount = template.neuralNet.neurons.count(NeuronType.Input);
         Iterable<Neuron> outputNeurons = template.neuralNet.neurons.values(NeuronType.Output);
 
-        List<OutputNeuronParameters> outputParameters = new ArrayList<>();
+        List<NeuronParameters> outputParameters = new ArrayList<>();
 
         for (Neuron outputNeuron : outputNeurons) {
 
             ActivationFunction activationFunction = outputNeuron.getActivationFunction();
             double[] activationFunctionParameters = outputNeuron.getActivationFunctionParameters();
 
-            OutputNeuronParameters parameters = new OutputNeuronParameters(
+            NeuronParameters parameters = new NeuronParameters(
                     activationFunction,
                     activationFunctionParameters);
 
@@ -84,12 +83,12 @@ public class NeatMineSweeperGeneticAlgorithm extends NeatGeneticAlgorithm<
     @Override
     protected NeatMineSweeperGenome createRandomGenome(RandomGenerator random, int inputCount, int outputCount) {
 
-        List<OutputNeuronParameters> outputParameters = new ArrayList<>();
+        List<NeuronParameters> outputParameters = new ArrayList<>();
 
         for (int i = 0; i < outputCount; i++) {
 
             ActivationFunction activationFunction = NeatMutationFunctions.getRandomActivationFunction(random);
-            OutputNeuronParameters parameters = new OutputNeuronParameters(
+            NeuronParameters parameters = new NeuronParameters(
                     activationFunction,
                     activationFunction.defaultParameters());
 

@@ -45,7 +45,7 @@ public class NeuralNetTest extends TestCase {
         final int neuronsPerHiddenLayer = 5;
 
         final int maxSteps = 1000000;
-        final double maxError = 0.001;
+        final double maxError = 0.0001;
 
         final int sqrtSetCount = 2;
 
@@ -56,17 +56,28 @@ public class NeuralNetTest extends TestCase {
         ActivationFunction activationFunction = KnownActivationFunctions.SIGMOID;
         double[] activationFunctionParameters = activationFunction.defaultParameters();
 
+        List<NeuronParameters> outputParameters = new ArrayList<>();
+        for (int i = 0; i < outputCount; i++) {
+            outputParameters.add(new NeuronParameters(activationFunction, activationFunctionParameters));
+        }
+
         RandomGenerator random = new MersenneTwister();
 
-        FeedForwardNeuralNet neuralNet = new FeedForwardNeuralNet(
+        FeedForwardNeuralNet<Neuron> neuralNet = new FeedForwardNeuralNet<Neuron>(
+                new DefaultNeuronFactory(),
                 inputCount,
-                outputCount,
-                hiddenLayers,
-                neuronsPerHiddenLayer,
-                activationFunction,
-                activationFunctionParameters);
+                outputParameters);
 
-        neuralNet.randomize(random);
+        List<NeuronParameters> hiddenLayerParameters = new ArrayList<>();
+        for (int i = 0; i < neuronsPerHiddenLayer; i++) {
+            hiddenLayerParameters.add(new NeuronParameters(activationFunction, activationFunctionParameters));
+        }
+
+        for (int i = 0; i < hiddenLayers; i++) {
+            neuralNet.addHiddenLayer(hiddenLayerParameters);
+        }
+
+        neuralNet.randomizeWeights(random);
 
         List<TrainingSet> trainingSets = getTrainingSets(sqrtSetCount);
 
@@ -86,7 +97,7 @@ public class NeuralNetTest extends TestCase {
 
                 // TODO: put this back?
                 //if (error > maxError) {
-                    neuralNet.backPropagate(learningRate, bias, set.expectedOutputs);
+                neuralNet.backPropagate(learningRate, bias, set.expectedOutputs);
                 //}
             }
 
@@ -100,6 +111,21 @@ public class NeuralNetTest extends TestCase {
             }
         }
 
+        // print results...
+        for (TrainingSet set : trainingSets) {
+
+            neuralNet.activate(set.inputs, bias);
+
+            List<Double> outputs = neuralNet.getCurrentOutputs();
+            double err = neuralNet.getCurrentError(set.expectedOutputs);
+
+            System.out.println(set.inputs);
+            System.out.println(set.expectedOutputs);
+            System.out.println(outputs);
+            System.out.println(err);
+            System.out.println();
+        }
+
         assertTrue(error < maxError);
     }
 
@@ -110,8 +136,10 @@ public class NeuralNetTest extends TestCase {
         for (int i = 0; i < sqrtCount; i++) {
 
             for (int j = 0; j < sqrtCount; j++) {
+
                 TrainingSet set = new TrainingSet(i, j);
                 sets.add(set);
+
             }
         }
 

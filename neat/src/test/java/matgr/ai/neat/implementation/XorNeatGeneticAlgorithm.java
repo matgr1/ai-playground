@@ -9,9 +9,9 @@ import matgr.ai.neat.mutation.NeatMutationFunctions;
 import matgr.ai.neat.mutation.NeatMutationSettings;
 import matgr.ai.neat.speciation.SpeciationStrategy;
 import matgr.ai.neuralnet.activation.ActivationFunction;
-import matgr.ai.neuralnet.cyclic.Neuron;
-import matgr.ai.neuralnet.cyclic.NeuronType;
-import matgr.ai.neuralnet.cyclic.OutputNeuronParameters;
+import matgr.ai.neuralnet.Neuron;
+import matgr.ai.neuralnet.NeuronType;
+import matgr.ai.neuralnet.NeuronParameters;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.ArrayList;
@@ -33,14 +33,14 @@ public class XorNeatGeneticAlgorithm
         int inputCount = template.neuralNet.neurons.count(NeuronType.Input);
         Iterable<Neuron> outputNeurons = template.neuralNet.neurons.values(NeuronType.Output);
 
-        List<OutputNeuronParameters> outputParameters = new ArrayList<>();
+        List<NeuronParameters> outputParameters = new ArrayList<>();
 
         for (Neuron outputNeuron : outputNeurons) {
 
             ActivationFunction activationFunction = outputNeuron.getActivationFunction();
             double[] activationFunctionParameters = outputNeuron.getActivationFunctionParameters();
 
-            OutputNeuronParameters parameters = new OutputNeuronParameters(
+            NeuronParameters parameters = new NeuronParameters(
                     activationFunction,
                     activationFunctionParameters);
 
@@ -53,12 +53,12 @@ public class XorNeatGeneticAlgorithm
     @Override
     protected NeatGenome createRandomGenome(RandomGenerator random, int inputCount, int outputCount) {
 
-        List<OutputNeuronParameters> outputParameters = new ArrayList<>();
+        List<NeuronParameters> outputParameters = new ArrayList<>();
 
         for (int i = 0; i < outputCount; i++) {
 
             ActivationFunction activationFunction = NeatMutationFunctions.getRandomActivationFunction(random);
-            OutputNeuronParameters parameters = new OutputNeuronParameters(
+            NeuronParameters parameters = new NeuronParameters(
                     activationFunction,
                     activationFunction.defaultParameters());
 

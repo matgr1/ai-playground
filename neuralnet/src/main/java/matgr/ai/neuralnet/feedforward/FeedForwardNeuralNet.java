@@ -1,229 +1,197 @@
 package matgr.ai.neuralnet.feedforward;
 
-import com.google.common.primitives.Doubles;
-import matgr.ai.neuralnet.activation.ActivationFunction;
-import matgr.ai.neuralnet.activation.KnownActivationFunctions;
+import matgr.ai.neuralnet.Neuron;
+import matgr.ai.neuralnet.NeuronFactory;
+import matgr.ai.neuralnet.NeuronMap;
+import matgr.ai.neuralnet.NeuronParameters;
+import matgr.ai.neuralnet.NeuronState;
+import matgr.ai.neuralnet.ReadOnlyNeuronMap;
 import org.apache.commons.math3.random.RandomGenerator;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-// TODO: can maybe share more with cyclic?
-public class FeedForwardNeuralNet {
+public class FeedForwardNeuralNet<NeuronT extends Neuron> {
 
-    private final List<FeedForwardNeuron> writableInputNeurons;
-    private final List<FeedForwardNeuronLayer> writableLayers;
+    private final NeuronFactory<NeuronT> neuronFactory;
 
-    public final ActivationFunction activationFunction;
+    private final NeuronMap<NeuronT> writableInputNeurons;
+    private final List<HiddenNeuronLayer<NeuronT>> writableHiddenLayers;
 
-    // TODO: this should be immutable...
-    public final double[] activationFunctionParameters;
+    public final ReadOnlyNeuronMap<NeuronT> inputNeurons;
+    public final List<HiddenNeuronLayer<NeuronT>> hiddenLayers;
+    public final OutputNeuronLayer<NeuronT> outputLayer;
 
-    public final List<FeedForwardNeuron> inputNeurons;
+    public FeedForwardNeuralNet(NeuronFactory<NeuronT> neuronFactory,
+                                int inputCount,
+                                Iterable<NeuronParameters> outputNeuronsParameters) {
 
-    public final List<FeedForwardNeuronLayer> layers;
+        this(neuronFactory, new OutputNeuronLayer<>(neuronFactory));
 
-    public final FeedForwardNeuralNetProperties properties;
-
-    // TODO: allow different numbers of neurons per hidden layer
-    public FeedForwardNeuralNet(int inputCount,
-                                int outputCount,
-                                int hiddenLayers,
-                                int neuronsPerHiddenLayer,
-                                ActivationFunction activationFunction,
-                                double... activationFunctionParameters) {
-
-        if (activationFunction == null) {
-            throw new IllegalArgumentException("Activation function net not provided");
+        if (null == outputNeuronsParameters) {
+            throw new IllegalArgumentException("outputNeuronsParameters not provided");
         }
-        if (activationFunctionParameters == null) {
-            throw new IllegalArgumentException("Activation function parameters net not provided");
-        }
-
-        this.activationFunction = activationFunction;
-        this.activationFunctionParameters = activationFunctionParameters;
-
-        this.writableInputNeurons = new ArrayList<>();
-        this.inputNeurons = Collections.unmodifiableList(this.writableInputNeurons);
-
-        this.writableLayers = new ArrayList<>();
-        this.layers = Collections.unmodifiableList(this.writableLayers);
-
-        int hiddenNeurons = 0;
-        WeightsCount hiddenNeuronWeights = new WeightsCount();
-
-        int outputNeurons = 0;
-        WeightsCount outputNeuronWeights = new WeightsCount();
 
         for (int i = 0; i < inputCount; i++) {
 
-            FeedForwardNeuron inputNeuron = new FeedForwardNeuron(0);
-            writableInputNeurons.add(inputNeuron);
+            NeuronT inputNeuron = neuronFactory.createInput(writableInputNeurons.getNextFreeNeuronId());
+            writableInputNeurons.addNeuron(inputNeuron);
         }
 
-        if (hiddenLayers > 0) {
+        this.outputLayer.setNeurons(inputNeurons.values(), outputNeuronsParameters);
+    }
 
-            FeedForwardNeuronLayer firstHiddenLayer = new FeedForwardNeuronLayer(
-                    neuronsPerHiddenLayer,
-                    inputCount);
-            writableLayers.add(firstHiddenLayer);
+    protected FeedForwardNeuralNet(FeedForwardNeuralNet<NeuronT> other) {
 
-            hiddenNeurons += firstHiddenLayer.neurons.size();
-            hiddenNeuronWeights = hiddenNeuronWeights.add(firstHiddenLayer.weightsCount);
+        this(other.neuronFactory, other.outputLayer.deepClone());
 
-            for (int i = 0; i < hiddenLayers - 1; ++i) {
+        // TODO: can this be relaxed?
+        if (other.getClass() != this.getClass()) {
+            throw new IllegalArgumentException("Cannot copy neural net of a different type");
+        }
 
-                FeedForwardNeuronLayer hiddenLayer = new FeedForwardNeuronLayer(
-                        neuronsPerHiddenLayer,
-                        neuronsPerHiddenLayer);
-                writableLayers.add(hiddenLayer);
+        for (NeuronState<NeuronT> neuron : other.writableInputNeurons.values()) {
 
-                hiddenNeurons += hiddenLayer.neurons.size();
-                hiddenNeuronWeights = hiddenNeuronWeights.add(hiddenLayer.weightsCount);
+            NeuronState<NeuronT> neuronClone = neuron.deepClone();
+            writableInputNeurons.addNeuron(neuronClone);
+        }
 
-            }
+        for (HiddenNeuronLayer<NeuronT> layer : other.writableHiddenLayers) {
 
-            FeedForwardNeuronLayer outputLayer = new FeedForwardNeuronLayer(
-                    outputCount,
-                    neuronsPerHiddenLayer);
-            writableLayers.add(outputLayer);
+            HiddenNeuronLayer<NeuronT> layerClone = layer.deepClone();
+            writableHiddenLayers.add(layerClone);
+        }
+    }
 
-            outputNeurons += outputLayer.neurons.size();
-            outputNeuronWeights = outputNeuronWeights.add(outputLayer.weightsCount);
+    private FeedForwardNeuralNet(NeuronFactory<NeuronT> neuronFactory, OutputNeuronLayer<NeuronT> outputLayer) {
 
+        if (null == neuronFactory) {
+            throw new IllegalArgumentException("neuronFactory not provided");
+        }
+
+        this.neuronFactory = neuronFactory;
+
+        this.writableInputNeurons = new NeuronMap<>();
+        this.inputNeurons = new ReadOnlyNeuronMap<>(this.writableInputNeurons);
+
+        this.writableHiddenLayers = new ArrayList<>();
+        this.hiddenLayers = Collections.unmodifiableList(this.writableHiddenLayers);
+
+        this.outputLayer = outputLayer;
+    }
+
+    // TODO: do all deepClones like others...
+    public FeedForwardNeuralNet deepClone() {
+        return new FeedForwardNeuralNet<>(this);
+    }
+
+    public int hiddenLayerCount() {
+        return writableHiddenLayers.size();
+    }
+
+    public void randomizeWeights(RandomGenerator random) {
+
+        for (HiddenNeuronLayer<NeuronT> layer : hiddenLayers) {
+            layer.randomizeWeights(random);
+        }
+
+        outputLayer.randomizeWeights(random);
+    }
+
+    public void addHiddenLayer(Iterable<NeuronParameters> neuronParameters) {
+
+        HiddenNeuronLayer<NeuronT> layer = new HiddenNeuronLayer<>(neuronFactory);
+
+        Iterable<NeuronT> previousLayerNeurons;
+
+        if (hiddenLayers.size() > 0) {
+            previousLayerNeurons = hiddenLayers.get(hiddenLayers.size() - 1).neurons.values();
         } else {
-
-            FeedForwardNeuronLayer outputLayer = new FeedForwardNeuronLayer(
-                    outputCount,
-                    inputCount);
-            writableLayers.add(outputLayer);
-
-            outputNeurons += outputLayer.neurons.size();
-            outputNeuronWeights = outputNeuronWeights.add(outputLayer.weightsCount);
-
+            previousLayerNeurons = inputNeurons.values();
         }
 
-        properties = new FeedForwardNeuralNetProperties(
-                inputCount,
-                outputCount,
-                hiddenLayers,
-                neuronsPerHiddenLayer,
-                hiddenNeurons,
-                hiddenNeuronWeights,
-                outputNeurons,
-                outputNeuronWeights);
+        layer.setNeurons(previousLayerNeurons, outputLayer, neuronParameters);
+
+        writableHiddenLayers.add(layer);
     }
 
-    private FeedForwardNeuralNet(FeedForwardNeuralNet other) {
+    public void setHiddenLayerNeurons(int index, Iterable<NeuronParameters> neuronParameters) {
 
-        if (other == null) {
-            throw new IllegalArgumentException("Other neural net not provided");
+        if ((index < 0) || (index >= hiddenLayers.size())) {
+            throw new IllegalArgumentException("index is out of range");
         }
 
-        this.activationFunction = other.activationFunction;
-        this.activationFunctionParameters = other.activationFunctionParameters;
+        HiddenNeuronLayer<NeuronT> layer = writableHiddenLayers.get(index);
 
-        this.writableInputNeurons = new ArrayList<>();
-        this.inputNeurons = Collections.unmodifiableList(this.writableInputNeurons);
+        Iterable<NeuronT> previousLayerNeurons;
 
-        this.writableLayers = new ArrayList<>();
-        this.layers = Collections.unmodifiableList(this.writableLayers);
-
-        for (FeedForwardNeuron neuron : other.writableInputNeurons) {
-            writableInputNeurons.add(neuron.deepClone());
+        if (index == 0) {
+            previousLayerNeurons = inputNeurons.values();
+        } else {
+            previousLayerNeurons = writableHiddenLayers.get(index - 1).neurons.values();
         }
 
-        for (FeedForwardNeuronLayer layer : other.writableLayers) {
-            writableLayers.add(layer.deepClone());
+        NeuronLayer<NeuronT> nextLayer;
+
+        if (index == (hiddenLayers.size() - 1)) {
+            nextLayer = outputLayer;
+        } else {
+            nextLayer = writableHiddenLayers.get(index + 1);
         }
 
-        properties = new FeedForwardNeuralNetProperties(
-                other.properties.inputCount,
-                other.properties.outputCount,
-                other.properties.hiddenLayers,
-                other.properties.neuronsPerHiddenLayer,
-                other.properties.hiddenNeurons,
-                other.properties.hiddenNeuronWeights,
-                other.properties.outputNeurons,
-                other.properties.outputNeuronWeights);
+        layer.setNeurons(previousLayerNeurons, nextLayer, neuronParameters);
     }
 
-    public void randomize(RandomGenerator random) {
+    public void setOutputLayerNeurons(Iterable<NeuronParameters> neuronParameters) {
 
-        for (FeedForwardNeuronLayer layer : layers) {
-            layer.randomize(random);
+        Iterable<NeuronT> previousLayerNeurons;
+
+        if (hiddenLayers.size() > 0) {
+            previousLayerNeurons = hiddenLayers.get(hiddenLayers.size() - 1).neurons.values();
+        } else {
+            previousLayerNeurons = inputNeurons.values();
         }
+
+        outputLayer.setNeurons(previousLayerNeurons, neuronParameters);
+    }
+
+    public void removeHiddenLayer(int index) {
+        // need to clean up connections (reconnect and clear/randomize weights)
+        throw new NotImplementedException();
     }
 
     public List<Double> activate(Collection<Double> inputs, double bias) {
 
-        if (properties.inputCount != inputs.size()) {
+        if (inputNeurons.count() != inputs.size()) {
             throw new IllegalArgumentException("Incorrect number of inputs");
         }
 
         // initialize inputs
         Iterator<Double> inputIterator = inputs.iterator();
-        for (FeedForwardNeuron inputNeuron : writableInputNeurons) {
+        for (NeuronState<NeuronT> inputNeuron : writableInputNeurons.values()) {
 
             inputNeuron.postSynapse = inputIterator.next();
         }
 
-        List<FeedForwardNeuron> previousNeurons = writableInputNeurons;
+        Iterable<NeuronState<NeuronT>> previousNeurons = writableInputNeurons.values();
 
-        for (FeedForwardNeuronLayer layer : writableLayers) {
+        for (HiddenNeuronLayer<NeuronT> layer : hiddenLayers) {
 
-            // TODO: this could maybe be done in one of the other loops?
-            for (FeedForwardNeuron neuron : layer.neurons) {
-                neuron.preSynapse = 0.0;
-                neuron.postSynapse = 0.0;
-            }
-
-            for (FeedForwardNeuron neuron : layer.neurons) {
-
-                for (int i = 0; i < previousNeurons.size(); i++) {
-
-                    FeedForwardNeuron previousNeuron = previousNeurons.get(i);
-                    double weight = neuron.incomingWeights.get(i);
-
-                    neuron.preSynapse += previousNeuron.postSynapse * weight;
-
-                    if (Double.isNaN(neuron.preSynapse)) {
-                        // TODO: pass in some sort of NaN handler (with the ability to completely bail out and
-                        //       return a status code from this function)... it should be given
-                        //       "input" and "weight" (so it can decide what to do based on input values being
-                        //       infinite/NaN/etc... if it fails, then set this to 0.0
-                        neuron.preSynapse = 0.0;
-                    }
-                }
-
-                neuron.preSynapse += (neuron.incomingBiasWeight * bias);
-
-                if (Double.isNaN(neuron.preSynapse)) {
-                    // TODO: pass in some sort of NaN handler (with the ability to completely bail out and
-                    //       return a status code from this function)... it should be given
-                    //       "neuron.incomingBiasWeight" and "bias" (so it can decide what to do based on input values being
-                    //       infinite/NaN/etc... if it fails, then set this to 0.0
-                    neuron.preSynapse = 0.0;
-                }
-
-                neuron.postSynapse = activationFunction.compute(neuron.preSynapse, activationFunctionParameters);
-
-                if (Double.isNaN(neuron.postSynapse)) {
-                    // NOTE: sigmoid shouldn't produce NaN, so fallback to this one for now...
-                    // TODO: pass in some sort of NaN handler (with the ability to completely bail out and return a
-                    //       status code from this function)... if it fails, then try this
-                    neuron.postSynapse = KnownActivationFunctions.SIGMOID.compute(
-                            neuron.preSynapse,
-                            KnownActivationFunctions.SIGMOID.defaultParameters());
-                }
-            }
-
-            previousNeurons = layer.neurons;
+            layer.activate(previousNeurons, bias);
+            previousNeurons = layer.writableNeurons.values();
         }
 
-        // copy the outputs (note that "previousNeurons" should now be the outputs)
+        outputLayer.activate(previousNeurons, bias);
+
         List<Double> outputs = new ArrayList<>();
 
-        for (FeedForwardNeuron neuron : previousNeurons) {
+        for (NeuronState<NeuronT> neuron : outputLayer.writableNeurons()) {
             outputs.add(neuron.postSynapse);
         }
 
@@ -234,93 +202,54 @@ public class FeedForwardNeuralNet {
 
         // TODO: handle NaNs
 
-        int outputLayerIndex = writableLayers.size() - 1;
+        NeuronLayer<NeuronT> layer = outputLayer;
+        Map<Long, Double> nextLayer_dE_dOut = null;
 
-        FeedForwardNeuronLayer layer = writableLayers.get(outputLayerIndex);
-        double[] dE_dOut_previous = null;
+        for (int layerIndex = hiddenLayerCount(); layerIndex >= 0; layerIndex--) {
 
-        for (int layerIndex = outputLayerIndex; layerIndex >= 0; layerIndex--) {
+            HiddenNeuronLayer<NeuronT> previousLayer = null;
 
-            FeedForwardNeuronLayer previousLayer = null;
-
-            List<FeedForwardNeuron> previousNeurons;
+            Iterable<NeuronState<NeuronT>> previousNeurons;
             if (layerIndex > 0) {
 
-                previousLayer = writableLayers.get(layerIndex - 1);
-                previousNeurons = previousLayer.neurons;
+                previousLayer = writableHiddenLayers.get(layerIndex - 1);
+                previousNeurons = previousLayer.writableNeurons.values();
 
             } else {
 
-                previousNeurons = inputNeurons;
+                previousNeurons = writableInputNeurons.values();
             }
 
-            double[] dE_dOut_hidden = new double[previousNeurons.size()];
+            Map<Long, Double> thisLayer_dE_dOut = new HashMap<>();
 
-            for (int neuronIdx = 0; neuronIdx < layer.neurons.size(); neuronIdx++) {
+            if (layerIndex == hiddenLayerCount()) {
 
-                FeedForwardNeuron neuron = layer.neurons.get(neuronIdx);
+                for (int neuronIdx = 0; neuronIdx < outputLayer.neuronCount(); neuronIdx++) {
 
-                double neuronOutput = neuron.postSynapse;
-
-                double dE_dOut;
-
-                // TODO: try to either move this test out a loop or do this better...
-                if (layerIndex == outputLayerIndex) {
+                    NeuronState<NeuronT> neuron = outputLayer.writableNeurons.get(neuronIdx);
+                    double neuronOutput = neuron.postSynapse;
 
                     double neuronExpectedOutput = expectedOutputs.get(neuronIdx);
-                    dE_dOut = -(neuronExpectedOutput - neuronOutput);
+                    double dE_dOut = -(neuronExpectedOutput - neuronOutput);
 
-                }else{
-
-                    dE_dOut = dE_dOut_previous[neuronIdx];
+                    thisLayer_dE_dOut.put(neuron.neuron.id, dE_dOut);
                 }
 
-                double dOut_dIn = activationFunction.computeDerivativeFromActivationOutput(
-                        neuronOutput,
-                        activationFunctionParameters);
+            } else {
 
-                double dE_dIn = dE_dOut * dOut_dIn;
-
-                // update incoming connection weights
-                for (int previousNeuronIdx = 0; previousNeuronIdx < previousNeurons.size(); previousNeuronIdx++) {
-
-                    FeedForwardNeuron previousNeuron = previousNeurons.get(previousNeuronIdx);
-
-                    double dIn_dW = previousNeuron.postSynapse;
-                    double dE_dW = dE_dIn * dIn_dW;
-
-                    double currentWeight = neuron.incomingWeights.get(previousNeuronIdx);
-
-                    // TODO: don't need to compute this on the last pass
-                    dE_dOut_hidden[previousNeuronIdx] += (dE_dIn * currentWeight);
-
-                    double newWeight = currentWeight - (dE_dW * learningRate);
-                    neuron.setIncomingWeight(previousNeuronIdx, newWeight);
-                }
-
-                // update incoming bias weight
-                double dIn_dW_Bias = bias;
-                double dE_dW_Bias = dE_dIn * dIn_dW_Bias;
-
-                double currentWeight_Bias = neuron.incomingBiasWeight;
-                double newWeight_Bias = currentWeight_Bias - (dE_dW_Bias * learningRate);
-
-                neuron.incomingBiasWeight = newWeight_Bias;
+                thisLayer_dE_dOut = nextLayer_dE_dOut;
             }
 
+            nextLayer_dE_dOut = layer.backPropagate(learningRate, bias, previousNeurons, thisLayer_dE_dOut);
             layer = previousLayer;
-            dE_dOut_previous = dE_dOut_hidden;
         }
     }
 
     public List<Double> getCurrentOutputs() {
 
-        int outputLayerIndex = writableLayers.size() - 1;
-        FeedForwardNeuronLayer outputLayer = writableLayers.get(outputLayerIndex);
-
         List<Double> outputs = new ArrayList<>();
 
-        for (FeedForwardNeuron outputNeuron : outputLayer.neurons) {
+        for (NeuronState<NeuronT> outputNeuron : outputLayer.writableNeurons()) {
 
             double output = outputNeuron.postSynapse;
             outputs.add(output);
@@ -331,21 +260,15 @@ public class FeedForwardNeuralNet {
 
     public double getCurrentError(Collection<Double> expectedOutputs) {
 
-        if (properties.outputCount != expectedOutputs.size()) {
+        if (outputLayer.neuronCount() != expectedOutputs.size()) {
             throw new IllegalArgumentException("Incorrect number of expected outputs");
         }
 
-        int outputLayerIndex = writableLayers.size() - 1;
-
-        FeedForwardNeuronLayer outputLayer = writableLayers.get(outputLayerIndex);
-
         Iterator<Double> expectedOutputIterator = expectedOutputs.iterator();
 
-        // TODO: which to use for this?
-        //double sumOfErrorSquares = 0.0;
         double error = 0.0;
 
-        for (FeedForwardNeuron outputNeuron : outputLayer.neurons) {
+        for (NeuronState<NeuronT> outputNeuron : outputLayer.writableNeurons()) {
 
             double output = outputNeuron.postSynapse;
             double expectedOutput = expectedOutputIterator.next();
@@ -354,15 +277,8 @@ public class FeedForwardNeuralNet {
             double outputError = (difference * difference);
 
             error += (0.5 * outputError);
-            //sumOfErrorSquares += outputError;
         }
 
-        //return Math.sqrt(sumOfErrorSquares);
         return error;
     }
-
-    public FeedForwardNeuralNet deepClone() {
-        return new FeedForwardNeuralNet(this);
-    }
-
 }
