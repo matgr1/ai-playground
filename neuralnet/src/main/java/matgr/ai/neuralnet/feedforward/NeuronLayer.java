@@ -43,7 +43,7 @@ public abstract class NeuronLayer<NeuronT extends Neuron> {
 
     public abstract SizedIterable<NeuronT> neurons();
 
-    protected abstract SizedIterable<NeuronState<NeuronT>> writableNeurons();
+    abstract SizedIterable<NeuronState<NeuronT>> writableNeurons();
 
     abstract void randomizeWeights(RandomGenerator random);
 
@@ -51,9 +51,9 @@ public abstract class NeuronLayer<NeuronT extends Neuron> {
 
     abstract void activate(SizedIterable<NeuronState<NeuronT>> previousLayerNeurons, double bias);
 
-    abstract void backPropagate(double learningRate,
+    abstract void backPropagate(SizedIterable<NeuronState<NeuronT>> previousLayerNeurons,
                                 double bias,
-                                SizedIterable<NeuronState<NeuronT>> previousLayerNeurons);
+                                double learningRate);
 
     protected static double getRandomWeight(RandomGenerator random) {
         return RandomFunctions.nextDouble(random, -1.0, 1.0);

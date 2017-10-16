@@ -18,51 +18,33 @@ import java.util.List;
 
 public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<NeuronT> {
 
-    private final int width;
-    private final int height;
-    private final int kernelWidth;
-    private final int kernelHeight;
-
-    private final int outputWidth;
-    private final int outputHeight;
+    private final ConvolutionalLayerSizes sizes;
 
     private final NeuronState<NeuronT>[][] neurons;
 
+    // TODO: bias weight?
     private final double[][] weights;
 
     public ConvolutionalLayer(NeuronFactory<NeuronT> neuronFactory,
                               int width,
                               int height,
-                              int kernelWidth,
-                              int kernelHeight,
+                              int kernelRadiusX,
+                              int kernelRadiusY,
                               ActivationFunction activationFunction,
                               double... activationFunctionParameters) {
 
         super(neuronFactory);
 
-        if (kernelWidth > width) {
-            throw new IllegalArgumentException("Kernel width cannot be larger than width");
-        }
-        if (kernelHeight > height) {
-            throw new IllegalArgumentException("Kernel height cannot be larger than height");
-        }
+        this.sizes = new ConvolutionalLayerSizes(width, height, kernelRadiusX, kernelRadiusY);
 
-        this.width = width;
-        this.height = height;
-        this.kernelWidth = kernelWidth;
-        this.kernelHeight = kernelHeight;
+        this.neurons = createNeuronArray(this.sizes.outputWidth, this.sizes.outputHeight);
+        this.weights = new double[this.sizes.kernelHeight][this.sizes.kernelWidth];
 
-        this.outputWidth = 1 + (this.width - this.kernelWidth);
-        this.outputHeight = 1 + (this.height - this.kernelHeight);
-
-        this.neurons = createNeuronArray(this.outputWidth, this.outputHeight);
-        this.weights = new double[this.kernelHeight][this.kernelWidth];
-
-        for (int y = 0; y < this.outputHeight; y++) {
+        for (int y = 0; y < this.sizes.outputHeight; y++) {
 
             NeuronState<NeuronT>[] row = this.neurons[y];
 
-            for (int x = 0; x < this.outputWidth; x++) {
+            for (int x = 0; x < this.sizes.outputWidth; x++) {
 
                 NeuronT neuron = neuronFactory.createHidden(activationFunction, activationFunctionParameters);
                 row[x] = new NeuronState<>(neuron);
@@ -74,41 +56,35 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
 
         super(other);
 
-        this.width = other.width;
-        this.height = other.height;
-        this.kernelWidth = other.kernelWidth;
-        this.kernelHeight = other.kernelHeight;
+        this.sizes = other.sizes.deepClone();
 
-        this.outputWidth = other.outputWidth;
-        this.outputHeight = other.outputHeight;
+        this.neurons = createNeuronArray(this.sizes.outputWidth, this.sizes.outputHeight);
+        this.weights = new double[this.sizes.kernelHeight][this.sizes.kernelWidth];
 
-        this.neurons = createNeuronArray(this.outputWidth, this.outputHeight);
-        this.weights = new double[this.kernelHeight][this.kernelWidth];
-
-        for (int y = 0; y < this.outputHeight; y++) {
+        for (int y = 0; y < this.sizes.outputHeight; y++) {
 
             NeuronState<NeuronT>[] sourceRow = other.neurons[y];
             NeuronState<NeuronT>[] targetRow = this.neurons[y];
 
-            for (int x = 0; x < this.outputWidth; x++) {
+            for (int x = 0; x < this.sizes.outputWidth; x++) {
 
                 NeuronState<NeuronT> sourceNeuron = sourceRow[x];
                 targetRow[x] = sourceNeuron.deepClone();
             }
         }
 
-        for (int y = 0; y < this.kernelHeight; y++) {
+        for (int y = 0; y < this.sizes.kernelHeight; y++) {
 
             double[] sourceRow = other.weights[y];
             double[] targetRow = this.weights[y];
 
-            System.arraycopy(sourceRow, 0, targetRow, 0, this.kernelWidth);
+            System.arraycopy(sourceRow, 0, targetRow, 0, this.sizes.kernelWidth);
         }
     }
 
     @Override
     public int neuronCount() {
-        return outputWidth * outputHeight;
+        return this.sizes.outputWidth * this.sizes.outputHeight;
     }
 
     @Override
@@ -120,17 +96,17 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
     @Override
     protected SizedIterable<NeuronState<NeuronT>> writableNeurons() {
 
-        return new SizedNeuronIterable(outputWidth, neurons);
+        return new SizedNeuronIterable(this.sizes.outputWidth, this.sizes.outputHeight, neurons);
     }
 
     @Override
     void randomizeWeights(RandomGenerator random) {
 
-        for (int y = 0; y < this.kernelHeight; y++) {
+        for (int y = 0; y < this.sizes.kernelHeight; y++) {
 
             double[] row = this.weights[y];
 
-            for (int x = 0; x < this.kernelWidth; x++) {
+            for (int x = 0; x < this.sizes.kernelWidth; x++) {
                 row[x] = getRandomWeight(random);
             }
         }
@@ -139,9 +115,9 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
     @Override
     void connect(SizedIterable<NeuronT> previousLayerNeurons) {
 
-        int expectedSize = width * height;
+        int expectedSize = this.sizes.inputWidth * this.sizes.inputHeight;
 
-        // TODO: if this passes a 2D representation, then this can adapt to new sizes easier... might be able
+        // TODO: if this takes a 2D representation, then this can adapt to new sizes easier... might be able
         //       to do more optimizations if it's 2D aware as well ...(a non-convolutional layer would then pass
         //       a 1xN sized set of neurons)
         // TODO: if above is true, then the constructor would only take kernel size and would do less initialization...
@@ -153,11 +129,57 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
 
     @Override
     void activate(SizedIterable<NeuronState<NeuronT>> previousLayerNeurons, double bias) {
-        throw new NotImplementedException();
+
+        // TODO: this could be way more efficient... would definitely benefit from GPGPU processing
+        // TODO: would also benefit from an array representation of the previous layer neurons... currently accessing
+        //       neurons will likely be absurdly slow...
+
+        // TODO: handle NaNs
+
+        for (int y = 0; y < this.sizes.outputHeight; y++) {
+
+            NeuronState<NeuronT>[] targetRow = neurons[y];
+
+            for (int x = 0; x < this.sizes.outputWidth; x++) {
+
+                double sum = 0.0;
+
+                for (int kernelY = 0; kernelY < this.sizes.kernelHeight; kernelY++) {
+
+                    double[] weightsRow = weights[kernelY];
+
+                    int inputY = kernelY + y;
+                    int inputRowIndex = inputY * this.sizes.inputWidth;
+
+                    for (int kernelX = 0; kernelX < this.sizes.kernelWidth; kernelX++) {
+
+                        double weight = weightsRow[kernelX];
+
+                        int inputX = kernelX + x;
+                        int inputIndex = inputRowIndex + inputX;
+
+                        NeuronState<NeuronT> inputNeuron = previousLayerNeurons.get(inputIndex);
+
+                        sum += (weight * inputNeuron.postSynapse);
+                    }
+                }
+
+                NeuronState<NeuronT> targetNeuron = targetRow[x];
+
+                targetNeuron.preSynapse = sum;
+
+                ActivationFunction activationFunction = targetNeuron.neuron.getActivationFunction();
+                double[] activationFunctionParameters = targetNeuron.neuron.getActivationFunctionParameters();
+
+                targetNeuron.postSynapse = activationFunction.compute(targetNeuron.preSynapse, activationFunctionParameters);
+            }
+        }
     }
 
     @Override
-    void backPropagate(double learningRate, double bias, SizedIterable<NeuronState<NeuronT>> previousLayerNeurons) {
+    void backPropagate(SizedIterable<NeuronState<NeuronT>> previousLayerNeurons,
+                       double bias,
+                       double learningRate) {
         throw new NotImplementedException();
     }
 
@@ -180,11 +202,13 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
     private class SizedNeuronIterable implements SizedIterable<NeuronState<NeuronT>> {
 
         private final int width;
+        private final int height;
 
         private final NeuronState<NeuronT>[][] neurons;
 
-        public SizedNeuronIterable(int width, NeuronState<NeuronT>[][] neurons) {
+        public SizedNeuronIterable(int width, int height, NeuronState<NeuronT>[][] neurons) {
             this.width = width;
+            this.height = height;
             this.neurons = neurons;
         }
 

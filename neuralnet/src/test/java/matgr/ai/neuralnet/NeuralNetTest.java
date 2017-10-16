@@ -1,11 +1,12 @@
 package matgr.ai.neuralnet;
 
+import com.google.common.primitives.Doubles;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.activation.KnownActivationFunctions;
-import matgr.ai.neuralnet.feedforward.ConvolutionalLayer;
+import matgr.ai.neuralnet.feedforward.ConvolutionalLayerSizes;
 import matgr.ai.neuralnet.feedforward.FeedForwardNeuralNet;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -18,6 +19,9 @@ import java.util.List;
  * Unit test for simple App.
  */
 public class NeuralNetTest extends TestCase {
+
+
+    private static final RandomGenerator random = new MersenneTwister();
 
     /**
      * Create the test case
@@ -36,8 +40,7 @@ public class NeuralNetTest extends TestCase {
         return new TestSuite(NeuralNetTest.class);
     }
 
-    // TODO: turn these into actual tests...
-    public void test1() {
+    public void testBasicFunction() {
 
         final int inputCount = 2;
         final int outputCount = 4;
@@ -62,27 +65,7 @@ public class NeuralNetTest extends TestCase {
             outputParameters.add(new NeuronParameters(activationFunction, activationFunctionParameters));
         }
 
-        RandomGenerator random = new MersenneTwister();
-
-
-
-
-//        ConvolutionalLayer<Neuron> conv = new ConvolutionalLayer<>(
-//                new DefaultNeuronFactory(),
-//                100,
-//                100,
-//                10,
-//                10,
-//                activationFunction,
-//                activationFunctionParameters);
-//
-//        int cnt = conv.neuronCount();
-
-
-
-
-
-        FeedForwardNeuralNet<Neuron> neuralNet = new FeedForwardNeuralNet<Neuron>(
+        FeedForwardNeuralNet<Neuron> neuralNet = new FeedForwardNeuralNet<>(
                 new DefaultNeuronFactory(),
                 inputCount,
                 outputParameters);
@@ -98,7 +81,7 @@ public class NeuralNetTest extends TestCase {
 
         neuralNet.randomizeWeights(random);
 
-        List<TrainingSet> trainingSets = getTrainingSets(sqrtSetCount);
+        List<TrainingSet> trainingSets = getBasicFunctionTrainingSets(sqrtSetCount);
 
         double error = Double.POSITIVE_INFINITY;
         double bestError = Double.POSITIVE_INFINITY;
@@ -148,7 +131,68 @@ public class NeuralNetTest extends TestCase {
         assertTrue(error < maxError);
     }
 
-    private List<TrainingSet> getTrainingSets(int sqrtCount) {
+    public void testConvolutional() {
+
+        final int convolutionInputWidth = 10;
+        final int convolutionInputHeight = 10;
+
+        final int convolutionalKernelRadiusX = 1;
+        final int convolutionalKernelRadiusY = 1;
+
+        final int outputCount = 4;
+
+        final double bias = 1;
+
+        final ConvolutionalLayerSizes convolutionalLayerSizes = new ConvolutionalLayerSizes(
+                convolutionInputWidth,
+                convolutionInputHeight,
+                convolutionalKernelRadiusX,
+                convolutionalKernelRadiusY);
+
+        final int inputCount = convolutionalLayerSizes.inputWidth * convolutionalLayerSizes.inputHeight;
+
+        ActivationFunction activationFunction = KnownActivationFunctions.SIGMOID;
+        double[] activationFunctionParameters = activationFunction.defaultParameters();
+
+        List<NeuronParameters> outputParameters = new ArrayList<>();
+        for (int i = 0; i < outputCount; i++) {
+            outputParameters.add(new NeuronParameters(activationFunction, activationFunctionParameters));
+        }
+
+        FeedForwardNeuralNet<Neuron> neuralNet = new FeedForwardNeuralNet<>(
+                new DefaultNeuronFactory(),
+                inputCount,
+                outputParameters);
+
+        neuralNet.addConvolutionalHiddenLayer(
+                convolutionInputWidth,
+                convolutionInputHeight,
+                convolutionalKernelRadiusX,
+                convolutionalKernelRadiusY,
+                activationFunction,
+                activationFunctionParameters);
+
+        neuralNet.randomizeWeights(random);
+
+        // TODO: real data...
+        double[] inputData = new double[inputCount];
+        for (int y = 0; y < convolutionalLayerSizes.inputHeight; y++) {
+
+            int rowIndex = y * convolutionalLayerSizes.inputWidth;
+
+            for (int x = 0; x < convolutionalLayerSizes.inputWidth; x++) {
+
+                int index = rowIndex + x;
+                inputData[index] = random.nextDouble();
+            }
+        }
+
+        List<Double> inputs = Doubles.asList(inputData);
+
+        List<Double> outputs = neuralNet.activate(inputs, bias);
+    }
+
+    private List<TrainingSet> getBasicFunctionTrainingSets(int sqrtCount) {
 
         List<TrainingSet> sets = new ArrayList<>();
 

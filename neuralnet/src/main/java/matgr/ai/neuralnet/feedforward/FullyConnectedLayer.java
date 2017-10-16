@@ -5,6 +5,7 @@ import matgr.ai.common.SizedIterable;
 import matgr.ai.common.SizedSelectIterable;
 import matgr.ai.neuralnet.Neuron;
 import matgr.ai.neuralnet.NeuronFactory;
+import matgr.ai.neuralnet.NeuronParameters;
 import matgr.ai.neuralnet.NeuronState;
 import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.activation.KnownActivationFunctions;
@@ -14,12 +15,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public abstract class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<NeuronT> {
+public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<NeuronT> {
 
     private final SizedIterable<NeuronT> neurons;
     private final List<IncomingConnections> connections;
 
-    final List<NeuronState<NeuronT>> writableNeurons;
+    private final List<NeuronState<NeuronT>> writableNeurons;
 
     protected FullyConnectedLayer(NeuronFactory<NeuronT> neuronFactory) {
 
@@ -54,6 +55,11 @@ public abstract class FullyConnectedLayer<NeuronT extends Neuron> extends Neuron
     }
 
     @Override
+    protected FullyConnectedLayer<NeuronT> deepClone() {
+        return new FullyConnectedLayer<>(this);
+    }
+
+    @Override
     public int neuronCount() {
         return writableNeurons.size();
     }
@@ -79,6 +85,25 @@ public abstract class FullyConnectedLayer<NeuronT extends Neuron> extends Neuron
             }
 
             neuronConnections.biasWeight = getRandomWeight(random);
+        }
+    }
+
+    void setNeurons(Iterable<NeuronParameters> neuronParameters) {
+
+        writableNeurons.clear();
+
+        if (neuronParameters != null) {
+
+            for (NeuronParameters parameters : neuronParameters) {
+
+                ActivationFunction activationFunction = parameters.activationFunction;
+                double[] activationFunctionParameters = parameters.activationFunctionParameters;
+
+                NeuronT newNeuron = neuronFactory.createHidden(activationFunction, activationFunctionParameters);
+                NeuronState<NeuronT> newNeuronState = new NeuronState<>(newNeuron);
+
+                writableNeurons.add(newNeuronState);
+            }
         }
     }
 
@@ -164,9 +189,9 @@ public abstract class FullyConnectedLayer<NeuronT extends Neuron> extends Neuron
     }
 
     @Override
-    void backPropagate(double learningRate,
+    void backPropagate(SizedIterable<NeuronState<NeuronT>> previousLayerNeurons,
                        double bias,
-                       SizedIterable<NeuronState<NeuronT>> previousLayerNeurons) {
+                       double learningRate) {
 
         Iterator<IncomingConnections> connectionsIterator = connections.iterator();
 
