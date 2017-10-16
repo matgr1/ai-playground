@@ -130,6 +130,11 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
     @Override
     void activate(SizedIterable<NeuronState<NeuronT>> previousLayerNeurons, double bias) {
 
+        // TODO: need parameters for wide vs narrow filter (wide means zero padding, narrow is what is currently
+        //       implemented below) ...could maybe just control this based on settings for input/output sizes and
+        //       the kernel size
+        // TODO: need parameters for stride size (how much to shift filter at each step, below is stride size 1)
+
         // TODO: this could be way more efficient... would definitely benefit from GPGPU processing
         // TODO: would also benefit from an array representation of the previous layer neurons... currently accessing
         //       neurons will likely be absurdly slow...
