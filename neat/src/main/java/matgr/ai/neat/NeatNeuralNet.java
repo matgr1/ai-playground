@@ -1,20 +1,18 @@
 package matgr.ai.neat;
 
-import matgr.ai.neuralnet.DefaultNeuronFactory;
-import matgr.ai.neuralnet.Neuron;
 import matgr.ai.neuralnet.NeuronParameters;
 import matgr.ai.neuralnet.cyclic.*;
 
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-public class NeatNeuralNet extends CyclicNeuralNet<NeatConnection, Neuron> {
+public class NeatNeuralNet extends CyclicNeuralNet<NeatConnection, CyclicNeuron> {
 
     private SortedMap<Long, NeatConnection> connectionMap;
 
     public NeatNeuralNet(int inputCount, Iterable<NeuronParameters> outputNeuronsParameters) {
 
-        super(new DefaultNeuronFactory(), new NeatConnectionFactory(), inputCount, outputNeuronsParameters);
+        super(new DefaultCyclicNeuronFactory(), new NeatConnectionFactory(), inputCount, outputNeuronsParameters);
     }
 
     protected NeatNeuralNet(NeatNeuralNet other) {

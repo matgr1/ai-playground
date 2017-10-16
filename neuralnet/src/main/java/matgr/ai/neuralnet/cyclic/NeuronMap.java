@@ -1,4 +1,7 @@
-package matgr.ai.neuralnet;
+package matgr.ai.neuralnet.cyclic;
+
+import matgr.ai.neuralnet.NeuronState;
+import matgr.ai.neuralnet.NeuronType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,7 +9,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-public class NeuronMap<NeuronT extends Neuron> {
+class NeuronMap<NeuronT extends CyclicNeuron> {
 
     private SortedMap<Long, NeuronState<NeuronT>> neuronMap;
     private Map<NeuronType, SortedMap<Long, NeuronState<NeuronT>>> neuronTypeMap;
@@ -79,7 +82,7 @@ public class NeuronMap<NeuronT extends Neuron> {
     }
 
     public void addNeuron(NeuronT neuron) {
-        addNeuron(new NeuronState<>(neuron, 0.0, 0.0));
+        addNeuron(new NeuronState<>(neuron));
     }
 
     public void addNeuron(NeuronState<NeuronT> neuron) {

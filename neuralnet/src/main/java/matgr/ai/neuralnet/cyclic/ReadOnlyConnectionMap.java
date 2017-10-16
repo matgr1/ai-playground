@@ -1,7 +1,5 @@
 package matgr.ai.neuralnet.cyclic;
 
-import matgr.ai.neuralnet.Connection;
-
 import java.util.List;
 import java.util.Set;
 

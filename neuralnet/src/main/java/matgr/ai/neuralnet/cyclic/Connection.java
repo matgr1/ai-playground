@@ -1,4 +1,4 @@
-package matgr.ai.neuralnet;
+package matgr.ai.neuralnet.cyclic;
 
 public class Connection {
 

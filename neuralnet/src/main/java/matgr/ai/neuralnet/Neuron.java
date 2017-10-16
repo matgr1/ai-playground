@@ -9,49 +9,41 @@ public class Neuron {
 
     public final NeuronType type;
 
-    public final long id;
-
     protected Neuron(NeuronType type,
-                     long id,
                      ActivationFunction activationFunction,
                      double... activationFunctionParameters) {
 
         this.type = type;
-        this.id = id;
 
         if (canActivate()) {
             setActivationFunction(activationFunction, activationFunctionParameters);
         }
     }
 
-    public static Neuron bias(long id) {
-        return new Neuron(NeuronType.Bias, id, null);
+    public static Neuron bias() {
+        return new Neuron(NeuronType.Bias, null);
     }
 
-    public static Neuron input(long id) {
-        return new Neuron(NeuronType.Input, id, null);
+    public static Neuron input() {
+        return new Neuron(NeuronType.Input, null);
     }
 
     public static Neuron hidden(
-            long id,
             ActivationFunction activationFunction,
             double... activationFunctionParameters) {
 
         return new Neuron(
                 NeuronType.Hidden,
-                id,
                 activationFunction,
                 activationFunctionParameters);
     }
 
     public static Neuron output(
-            long id,
             ActivationFunction activationFunction,
             double... activationFunctionParameters) {
 
         return new Neuron(
                 NeuronType.Output,
-                id,
                 activationFunction,
                 activationFunctionParameters);
     }
@@ -122,7 +114,6 @@ public class Neuron {
     }
 
     protected Neuron deepClone() {
-        return new Neuron(type, id, activationFunction, activationFunctionParameters);
+        return new Neuron(type, activationFunction, activationFunctionParameters);
     }
-
 }

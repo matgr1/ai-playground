@@ -10,6 +10,7 @@ import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.Neuron;
 import matgr.ai.neuralnet.NeuronType;
 import matgr.ai.neuralnet.NeuronParameters;
+import matgr.ai.neuralnet.cyclic.CyclicNeuron;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.ArrayList;
@@ -59,7 +60,7 @@ public class NeatMineSweeperGeneticAlgorithm extends NeatGeneticAlgorithm<
     protected NeatMineSweeperGenome createNewGenomeFromTemplate(NeatMineSweeperGenome template) {
 
         int inputCount = template.neuralNet.neurons.count(NeuronType.Input);
-        Iterable<Neuron> outputNeurons = template.neuralNet.neurons.values(NeuronType.Output);
+        Iterable<CyclicNeuron> outputNeurons = template.neuralNet.neurons.values(NeuronType.Output);
 
         List<NeuronParameters> outputParameters = new ArrayList<>();
 

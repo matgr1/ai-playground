@@ -8,8 +8,8 @@ import matgr.ai.neat.crossover.NeatCrossoverSettings;
 import matgr.ai.neat.mutation.NeatMutationFunctions;
 import matgr.ai.neat.mutation.NeatMutationSettings;
 import matgr.ai.neat.speciation.SpeciationStrategy;
-import matgr.ai.neuralnet.Neuron;
 import matgr.ai.neuralnet.NeuronType;
+import matgr.ai.neuralnet.cyclic.CyclicNeuron;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.ArrayList;
@@ -77,11 +77,11 @@ public abstract class NeatGeneticAlgorithm<
 
             NeatGenomeT genome = createRandomGenome(random, inputCount, outputCount);
 
-            for (Neuron outputNode : genome.neuralNet.neurons.values(NeuronType.Output)) {
+            for (CyclicNeuron outputNode : genome.neuralNet.neurons.values(NeuronType.Output)) {
 
                 addRandomConnection(context, genome, genome.neuralNet.biasNeuron(), outputNode);
 
-                for (Neuron inputNode : genome.neuralNet.neurons.values(NeuronType.Input)) {
+                for (CyclicNeuron inputNode : genome.neuralNet.neurons.values(NeuronType.Input)) {
 
                     addRandomConnection(context, genome, inputNode, outputNode);
                 }
@@ -96,8 +96,8 @@ public abstract class NeatGeneticAlgorithm<
 
     private void addRandomConnection(NeatEvolutionContext context,
                                      NeatGenomeT genome,
-                                     Neuron source,
-                                     Neuron target) {
+                                     CyclicNeuron source,
+                                     CyclicNeuron target) {
 
         NeatMutationFunctions.addConnection(
                 genome,

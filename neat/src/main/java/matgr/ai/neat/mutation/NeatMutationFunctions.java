@@ -10,6 +10,7 @@ import matgr.ai.neuralnet.activation.KnownActivationFunctions;
 import matgr.ai.neat.ConnectionIds;
 import matgr.ai.neuralnet.Neuron;
 import matgr.ai.neuralnet.NeuronType;
+import matgr.ai.neuralnet.cyclic.CyclicNeuron;
 import matgr.ai.neuralnet.cyclic.ReadOnlyConnectionMap;
 import org.apache.commons.math3.random.RandomGenerator;
 
@@ -76,7 +77,7 @@ public class NeatMutationFunctions {
         }
     }
 
-    public static ActivationFunction getRandomActivationFunction(RandomGenerator random){
+    public static ActivationFunction getRandomActivationFunction(RandomGenerator random) {
 
         // TODO: allow limiting/setting probabilities of each type
         String activationFunctionName = RandomFunctions.selectItem(random, KnownActivationFunctions.ALL.keySet());
@@ -95,7 +96,7 @@ public class NeatMutationFunctions {
             oldConnection.enabled = false;
 
             ActivationFunction activationFunction = getRandomActivationFunction(random);
-            Neuron newNode = genome.neuralNet.addHiddenNeuron(activationFunction);
+            CyclicNeuron newNode = genome.neuralNet.addHiddenNeuron(activationFunction);
 
             // TODO: order? max weight first or second?
             addConnection(
@@ -218,8 +219,8 @@ public class NeatMutationFunctions {
 
         if (connectionIds != null) {
 
-            Neuron sourceNode = genome.neuralNet.neurons.get(connectionIds.sourceId);
-            Neuron targetNode = genome.neuralNet.neurons.get(connectionIds.targetId);
+            CyclicNeuron sourceNode = genome.neuralNet.neurons.get(connectionIds.sourceId);
+            CyclicNeuron targetNode = genome.neuralNet.neurons.get(connectionIds.targetId);
 
             double weight = settings.getConnectionWeightsMutationSettings().getRandomValueInRange(random);
 

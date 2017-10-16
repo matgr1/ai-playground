@@ -5,26 +5,24 @@ import matgr.ai.neuralnet.activation.ActivationFunction;
 public class DefaultNeuronFactory implements NeuronFactory<Neuron> {
 
     @Override
-    public Neuron createBias(long id) {
-        return Neuron.bias(id);
+    public Neuron createBias() {
+        return Neuron.bias();
     }
 
     @Override
-    public Neuron createInput(long id) {
-        return Neuron.input(id);
+    public Neuron createInput() {
+        return Neuron.input();
     }
 
     @Override
-    public Neuron createHidden(long id,
-                               ActivationFunction activationFunction,
+    public Neuron createHidden(ActivationFunction activationFunction,
                                double[] activationFunctionParameters) {
-        return Neuron.hidden(id, activationFunction, activationFunctionParameters);
+        return Neuron.hidden(activationFunction, activationFunctionParameters);
     }
 
     @Override
-    public Neuron createOutput(long id,
-                               ActivationFunction activationFunction,
+    public Neuron createOutput(ActivationFunction activationFunction,
                                double[] activationFunctionParameters) {
-        return Neuron.output(id, activationFunction, activationFunctionParameters);
+        return Neuron.output(activationFunction, activationFunctionParameters);
     }
 }

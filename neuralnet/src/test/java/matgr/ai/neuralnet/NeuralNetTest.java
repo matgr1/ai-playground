@@ -5,6 +5,7 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.activation.KnownActivationFunctions;
+import matgr.ai.neuralnet.feedforward.ConvolutionalLayer;
 import matgr.ai.neuralnet.feedforward.FeedForwardNeuralNet;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -62,6 +63,24 @@ public class NeuralNetTest extends TestCase {
         }
 
         RandomGenerator random = new MersenneTwister();
+
+
+
+
+//        ConvolutionalLayer<Neuron> conv = new ConvolutionalLayer<>(
+//                new DefaultNeuronFactory(),
+//                100,
+//                100,
+//                10,
+//                10,
+//                activationFunction,
+//                activationFunctionParameters);
+//
+//        int cnt = conv.neuronCount();
+
+
+
+
 
         FeedForwardNeuralNet<Neuron> neuralNet = new FeedForwardNeuralNet<Neuron>(
                 new DefaultNeuronFactory(),

@@ -1,10 +1,12 @@
-package matgr.ai.neuralnet;
+package matgr.ai.neuralnet.cyclic;
 
 import matgr.ai.common.SelectIterable;
+import matgr.ai.neuralnet.NeuronState;
+import matgr.ai.neuralnet.NeuronType;
 
 import java.util.Set;
 
-public class ReadOnlyNeuronMap<NeuronT extends Neuron> {
+public class ReadOnlyNeuronMap<NeuronT extends CyclicNeuron> {
 
     private NeuronMap<NeuronT> neurons;
 

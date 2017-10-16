@@ -1,6 +1,6 @@
 package matgr.ai.neat;
 
-import matgr.ai.neuralnet.Connection;
+import matgr.ai.neuralnet.cyclic.Connection;
 
 public class NeatConnection extends Connection {
 

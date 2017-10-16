@@ -11,7 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neuron> {
+public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends CyclicNeuron> {
 
     private final static Logger logger;
 
@@ -19,7 +19,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
         logger = Logger.getLogger(CyclicNeuralNet.class.getName());
     }
 
-    private final NeuronFactory<NeuronT> neuronFactory;
+    private final CyclicNeuronFactory<NeuronT> neuronFactory;
     private final ConnectionFactory<ConnectionT> connectionFactory;
 
     private final NeuronMap<NeuronT> writableNeurons;
@@ -30,7 +30,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
     public final ReadOnlyNeuronMap<NeuronT> neurons;
     public final ReadOnlyConnectionMap<ConnectionT> connections;
 
-    public CyclicNeuralNet(NeuronFactory<NeuronT> neuronFactory,
+    public CyclicNeuralNet(CyclicNeuronFactory<NeuronT> neuronFactory,
                            ConnectionFactory<ConnectionT> connectionFactory,
                            int inputCount,
                            Iterable<NeuronParameters> outputNeuronsParameters) {
@@ -87,7 +87,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
         this.version = other.version;
     }
 
-    private CyclicNeuralNet(NeuronFactory<NeuronT> neuronFactory,
+    private CyclicNeuralNet(CyclicNeuronFactory<NeuronT> neuronFactory,
                             ConnectionFactory<ConnectionT> connectionFactory) {
 
         if (null == neuronFactory) {
@@ -118,7 +118,7 @@ public class CyclicNeuralNet<ConnectionT extends Connection, NeuronT extends Neu
     public static <
             CyclicNeuralNetT extends CyclicNeuralNet<ConnectionT, NeuronT>,
             ConnectionT extends Connection,
-            NeuronT extends Neuron>
+            NeuronT extends CyclicNeuron>
     CyclicNeuralNetT deepClone(CyclicNeuralNet network) {
 
         @SuppressWarnings("unchecked")

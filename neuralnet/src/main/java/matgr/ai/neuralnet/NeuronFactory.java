@@ -4,16 +4,14 @@ import matgr.ai.neuralnet.activation.ActivationFunction;
 
 public interface NeuronFactory<NeuronT extends Neuron> {
 
-    NeuronT createBias(long id);
+    NeuronT createBias();
 
-    NeuronT createInput(long id);
+    NeuronT createInput();
 
-    NeuronT createHidden(long id,
-                         ActivationFunction activationFunction,
+    NeuronT createHidden(ActivationFunction activationFunction,
                          double[] activationFunctionParameters);
 
-    NeuronT createOutput(long id,
-                         ActivationFunction activationFunction,
+    NeuronT createOutput(ActivationFunction activationFunction,
                          double[] activationFunctionParameters);
 
 }

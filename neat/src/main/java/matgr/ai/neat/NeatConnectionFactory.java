@@ -1,6 +1,6 @@
 package matgr.ai.neat;
 
-import matgr.ai.neuralnet.ConnectionFactory;
+import matgr.ai.neuralnet.cyclic.ConnectionFactory;
 
 import java.util.concurrent.atomic.AtomicLong;
 

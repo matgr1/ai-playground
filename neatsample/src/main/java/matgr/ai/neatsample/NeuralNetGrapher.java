@@ -4,9 +4,9 @@ import com.jgraph.layout.JGraphFacade;
 import com.jgraph.layout.hierarchical.JGraphHierarchicalLayout;
 import javafx.embed.swing.SwingNode;
 import matgr.ai.neat.NeatNeuralNet;
-import matgr.ai.neuralnet.Connection;
+import matgr.ai.neuralnet.cyclic.Connection;
 import matgr.ai.neuralnet.cyclic.CyclicNeuralNet;
-import matgr.ai.neuralnet.Neuron;
+import matgr.ai.neuralnet.cyclic.CyclicNeuron;
 import org.jgraph.JGraph;
 import org.jgraph.graph.DefaultGraphCell;
 import org.jgraph.graph.GraphConstants;
@@ -116,7 +116,7 @@ public class NeuralNetGrapher {
 
             Map<Long, NeuronVertex> neuronVertexMap = new HashMap<>();
 
-            for (Neuron n : graphToRender.neurons.values()) {
+            for (CyclicNeuron n : graphToRender.neurons.values()) {
                 NeuronVertex v = new NeuronVertex(n);
                 neuronVertexMap.put(n.id, v);
                 graph.addVertex(v);
@@ -210,9 +210,9 @@ public class NeuralNetGrapher {
 
     static class NeuronVertex {
 
-        public final Neuron neuron;
+        public final CyclicNeuron neuron;
 
-        public NeuronVertex(Neuron neuron) {
+        public NeuronVertex(CyclicNeuron neuron) {
             this.neuron = neuron;
         }
 

@@ -1,4 +1,7 @@
-package matgr.ai.neuralnet;
+package matgr.ai.neuralnet.cyclic;
+
+import matgr.ai.neuralnet.cyclic.Connection;
+import matgr.ai.neuralnet.cyclic.ConnectionFactory;
 
 public class DefaultConnectionFactory implements ConnectionFactory<Connection> {
 

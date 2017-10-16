@@ -8,7 +8,7 @@ import matgr.ai.math.RandomFunctions;
 import matgr.ai.neat.NeatConnection;
 import matgr.ai.neat.NeatGenome;
 import matgr.ai.neat.NeatNeuralNet;
-import matgr.ai.neuralnet.Neuron;
+import matgr.ai.neuralnet.cyclic.CyclicNeuron;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.SortedMap;
@@ -179,12 +179,12 @@ public final class NeatCrossoverFunctions {
                                                 double weight,
                                                 boolean isEnabled) {
 
-        Neuron sourceNode = child.neurons.get(sourceNodeId);
+        CyclicNeuron sourceNode = child.neurons.get(sourceNodeId);
         if (sourceNode == null) {
             sourceNode = addHiddenNode(parent, child, sourceNodeId);
         }
 
-        Neuron targetNode = child.neurons.get(targetNodeId);
+        CyclicNeuron targetNode = child.neurons.get(targetNodeId);
         if (targetNode == null) {
             targetNode = addHiddenNode(parent, child, targetNodeId);
         }
@@ -193,11 +193,11 @@ public final class NeatCrossoverFunctions {
 
     }
 
-    private static Neuron addHiddenNode(NeatNeuralNet parent,
-                                        NeatNeuralNet child,
-                                        long nodeId) {
+    private static CyclicNeuron addHiddenNode(NeatNeuralNet parent,
+                                              NeatNeuralNet child,
+                                              long nodeId) {
 
-        Neuron parentNode = parent.neurons.get(nodeId);
+        CyclicNeuron parentNode = parent.neurons.get(nodeId);
 
         return child.addHiddenNeuron(
                 parentNode.id,
