@@ -141,6 +141,9 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
 
         // TODO: handle NaNs
 
+        // NOTE: this might technically be cross-correlation rather than convolution... does that really matter?
+        //       it shouldn't as long as the derivatives are calculated correctly during back propagation?)
+
         for (int y = 0; y < this.sizes.outputHeight; y++) {
 
             NeuronState<NeuronT>[] targetRow = neurons[y];
