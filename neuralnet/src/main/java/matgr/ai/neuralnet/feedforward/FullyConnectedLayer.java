@@ -212,18 +212,22 @@ public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<Neu
 
             double dE_dIn = dE_dOut * dOut_dIn;
 
-            // update incoming connection weights
             for (NeuronState<NeuronT> previousNeuron : previousLayerNeurons) {
 
                 double dIn_dW = previousNeuron.postSynapse;
                 double dE_dW = dE_dIn * dIn_dW;
 
                 IncomingConnection neuronConnection = neuronConnectionIterator.next();
+                double currentWeight = neuronConnection.weight;
 
+                // update incoming connection weight
+                neuronConnection.weight = currentWeight - (dE_dW * learningRate);
+
+                // update previous neuron dE/dOut
                 // TODO: don't need to compute this on the last pass
-                previousNeuron.postSynapseErrorDerivative += (dE_dIn * neuronConnection.weight);
-
-                neuronConnection.weight = neuronConnection.weight - (dE_dW * learningRate);
+                double dIn_dOutPrev = currentWeight;
+                double dE_dOutPrev = (dE_dIn * dIn_dOutPrev);
+                previousNeuron.postSynapseErrorDerivative += dE_dOutPrev;
             }
 
             // update incoming bias weight

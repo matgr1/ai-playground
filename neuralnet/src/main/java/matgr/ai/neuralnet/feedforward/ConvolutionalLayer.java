@@ -8,7 +8,6 @@ import matgr.ai.neuralnet.NeuronFactory;
 import matgr.ai.neuralnet.NeuronState;
 import matgr.ai.neuralnet.activation.ActivationFunction;
 import org.apache.commons.math3.random.RandomGenerator;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Array;
@@ -23,7 +22,7 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
     private final NeuronState<NeuronT>[][] neurons;
 
     // TODO: bias weight?
-    private final double[][] weights;
+    private double[][] weights;
 
     public ConvolutionalLayer(NeuronFactory<NeuronT> neuronFactory,
                               int width,
@@ -146,7 +145,7 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
 
         for (int y = 0; y < this.sizes.outputHeight; y++) {
 
-            NeuronState<NeuronT>[] targetRow = neurons[y];
+            NeuronState<NeuronT>[] outputRow = neurons[y];
 
             for (int x = 0; x < this.sizes.outputWidth; x++) {
 
@@ -172,14 +171,14 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
                     }
                 }
 
-                NeuronState<NeuronT> targetNeuron = targetRow[x];
+                NeuronState<NeuronT> outputNeuron = outputRow[x];
 
-                targetNeuron.preSynapse = sum;
+                outputNeuron.preSynapse = sum;
 
-                ActivationFunction activationFunction = targetNeuron.neuron.getActivationFunction();
-                double[] activationFunctionParameters = targetNeuron.neuron.getActivationFunctionParameters();
+                ActivationFunction activationFunction = outputNeuron.neuron.getActivationFunction();
+                double[] activationFunctionParameters = outputNeuron.neuron.getActivationFunctionParameters();
 
-                targetNeuron.postSynapse = activationFunction.compute(targetNeuron.preSynapse, activationFunctionParameters);
+                outputNeuron.postSynapse = activationFunction.compute(outputNeuron.preSynapse, activationFunctionParameters);
             }
         }
     }
@@ -188,7 +187,74 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
     void backPropagate(SizedIterable<NeuronState<NeuronT>> previousLayerNeurons,
                        double bias,
                        double learningRate) {
-        throw new NotImplementedException();
+
+        double[][] newWeights = new double[sizes.kernelHeight][sizes.kernelWidth];
+
+        for (int y = 0; y < sizes.kernelHeight; y++) {
+
+            double[] weightsRow = weights[y];
+            double[] newWeightsRow = newWeights[y];
+
+            System.arraycopy(weightsRow, 0, newWeightsRow, 0, sizes.kernelWidth);
+        }
+
+        for (int y = 0; y < this.sizes.outputHeight; y++) {
+
+            NeuronState<NeuronT>[] outputRow = neurons[y];
+
+            for (int x = 0; x < this.sizes.outputWidth; x++) {
+
+                NeuronState<NeuronT> outputNeuron = outputRow[x];
+
+                // TODO: share this with FullyConnectedLayer
+                double neuronOutput = outputNeuron.postSynapse;
+                double dE_dOut = outputNeuron.postSynapseErrorDerivative;
+
+                ActivationFunction activationFunction = outputNeuron.neuron.getActivationFunction();
+                double[] activationFunctionParameters = outputNeuron.neuron.getActivationFunctionParameters();
+
+                double dOut_dIn = activationFunction.computeDerivativeFromActivationOutput(
+                        neuronOutput,
+                        activationFunctionParameters);
+
+                double dE_dIn = dE_dOut * dOut_dIn;
+
+                for (int kernelY = 0; kernelY < this.sizes.kernelHeight; kernelY++) {
+
+                    double[] weightsRow = weights[kernelY];
+                    double[] newWeightsRow = newWeights[kernelY];
+
+                    int inputY = kernelY + y;
+                    int inputRowIndex = inputY * this.sizes.inputWidth;
+
+                    for (int kernelX = 0; kernelX < this.sizes.kernelWidth; kernelX++) {
+
+                        double currentWeight = weightsRow[kernelX];
+
+                        int inputX = kernelX + x;
+                        int inputIndex = inputRowIndex + inputX;
+
+                        NeuronState<NeuronT> previousNeuron = previousLayerNeurons.get(inputIndex);
+
+                        double dIn_dW = previousNeuron.postSynapse;
+                        double dE_dW = dE_dIn * dIn_dW;
+
+                        // update incoming connection weight
+                        newWeightsRow[kernelX] = newWeightsRow[kernelX] - (dE_dW * learningRate);
+
+                        // update previous neuron dE/dOut
+                        // TODO: don't need to compute this on the last pass
+                        double dIn_dOutPrev = currentWeight;
+                        double dE_dOutPrev = (dE_dIn * dIn_dOutPrev);
+                        previousNeuron.postSynapseErrorDerivative += dE_dOutPrev;
+                    }
+                }
+
+                // TODO: bias? per neuron?
+            }
+        }
+
+        weights = newWeights;
     }
 
     @Override
