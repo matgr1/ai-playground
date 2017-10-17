@@ -11,19 +11,14 @@ public abstract class NeuronLayer<NeuronT extends Neuron> {
 
     protected final NeuronFactory<NeuronT> neuronFactory;
 
-    public final LayerActivationFunction activationFunction;
-
-    protected NeuronLayer(NeuronFactory<NeuronT> neuronFactory, LayerActivationFunction activationFunction) {
+    protected NeuronLayer(
+            NeuronFactory<NeuronT> neuronFactory) {
 
         if (null == neuronFactory) {
             throw new IllegalArgumentException("neuronFactory not provided");
         }
-        if (null == activationFunction) {
-            throw new IllegalArgumentException("activationFunction not provided");
-        }
 
         this.neuronFactory = neuronFactory;
-        this.activationFunction = activationFunction;
     }
 
     protected NeuronLayer(NeuronLayer<NeuronT> other) {
@@ -33,7 +28,6 @@ public abstract class NeuronLayer<NeuronT extends Neuron> {
         }
 
         this.neuronFactory = other.neuronFactory;
-        this.activationFunction = other.activationFunction;
     }
 
     protected abstract NeuronLayer<NeuronT> deepClone();
@@ -50,17 +44,21 @@ public abstract class NeuronLayer<NeuronT extends Neuron> {
         return clone;
     }
 
-    public abstract int neuronCount();
+    public abstract int inputCount();
 
-    public abstract SizedIterable<NeuronT> neurons();
+    public abstract int outputCount();
 
-    abstract SizedIterable<NeuronState<NeuronT>> writableNeurons();
+    public abstract SizedIterable<NeuronT> outputNeurons();
+
+    abstract SizedIterable<NeuronState<NeuronT>> outputWritableNeurons();
 
     abstract void randomizeWeights(RandomGenerator random);
 
     abstract void connect(SizedIterable<NeuronT> previousLayerNeurons);
 
     abstract void activate(SizedIterable<NeuronState<NeuronT>> previousLayerNeurons, double bias);
+
+    abstract void resetPostSynapseErrorDerivatives(double value);
 
     abstract void backPropagate(SizedIterable<NeuronState<NeuronT>> previousLayerNeurons,
                                 double bias,

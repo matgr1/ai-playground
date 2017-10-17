@@ -15,7 +15,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<NeuronT> {
+public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer<NeuronT> {
 
     private final ConvolutionalLayerSizes sizes;
 
@@ -25,13 +25,14 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
     private double[][] weights;
 
     public ConvolutionalLayer(NeuronFactory<NeuronT> neuronFactory,
-                              LayerActivationFunction activationFunction,
                               int width,
                               int height,
                               int kernelRadiusX,
-                              int kernelRadiusY) {
+                              int kernelRadiusY,
+                              ActivationFunction activationFunction,
+                              double... activationFunctionParameters) {
 
-        super(neuronFactory, activationFunction);
+        super(neuronFactory, activationFunction, activationFunctionParameters);
 
         this.sizes = new ConvolutionalLayerSizes(width, height, kernelRadiusX, kernelRadiusY);
 
@@ -81,18 +82,23 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
     }
 
     @Override
-    public int neuronCount() {
+    public int inputCount() {
+        return this.sizes.inputWidth * this.sizes.inputHeight;
+    }
+
+    @Override
+    public int outputCount() {
         return this.sizes.outputWidth * this.sizes.outputHeight;
     }
 
     @Override
-    public SizedIterable<NeuronT> neurons() {
+    public SizedIterable<NeuronT> outputNeurons() {
 
-        return new SizedSelectIterable<>(writableNeurons(), n -> n.neuron);
+        return new SizedSelectIterable<>(outputWritableNeurons(), n -> n.neuron);
     }
 
     @Override
-    protected SizedIterable<NeuronState<NeuronT>> writableNeurons() {
+    protected SizedIterable<NeuronState<NeuronT>> outputWritableNeurons() {
 
         return new SizedNeuronIterable(this.sizes.outputWidth, this.sizes.outputHeight, neurons);
     }
@@ -113,7 +119,7 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
     @Override
     void connect(SizedIterable<NeuronT> previousLayerNeurons) {
 
-        int expectedSize = this.sizes.inputWidth * this.sizes.inputHeight;
+        int expectedSize = this.inputCount();
 
         // TODO: if this takes a 2D representation, then this can adapt to new sizes easier... might be able
         //       to do more optimizations if it's 2D aware as well ...(a non-convolutional layer would then pass
@@ -172,10 +178,25 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
 
                 NeuronState<NeuronT> outputNeuron = outputRow[x];
                 outputNeuron.preSynapse = sum;
+
+                activateNeuron(outputNeuron);
             }
         }
+    }
 
-        activationFunction.activate(writableNeurons());
+    @Override
+    void resetPostSynapseErrorDerivatives(double value) {
+
+        for (int y = 0; y < this.sizes.outputHeight; y++) {
+
+            NeuronState<NeuronT>[] row = this.neurons[y];
+
+            for (int x = 0; x < this.sizes.outputWidth; x++) {
+
+                NeuronState<NeuronT> neuron = row[x];
+                neuron.postSynapseErrorDerivative = value;
+            }
+        }
     }
 
     @Override
@@ -202,10 +223,8 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
                 NeuronState<NeuronT> outputNeuron = outputRow[x];
 
                 // TODO: share this with FullyConnectedLayer
-                double neuronOutput = outputNeuron.postSynapse;
                 double dE_dOut = outputNeuron.postSynapseErrorDerivative;
-
-                double dOut_dIn = activationFunction.computeDerivative(neuronOutput);
+                double dOut_dIn = computePreSynapseOutputDerivative(outputNeuron);
 
                 double dE_dIn = dE_dOut * dOut_dIn;
 

@@ -6,6 +6,7 @@ import matgr.ai.common.SizedSelectIterable;
 import matgr.ai.neuralnet.Neuron;
 import matgr.ai.neuralnet.NeuronFactory;
 import matgr.ai.neuralnet.NeuronState;
+import matgr.ai.neuralnet.activation.ActivationFunction;
 import org.apache.commons.math3.random.RandomGenerator;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -24,14 +25,25 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
 
     public final SizedIterable<NeuronT> inputNeurons;
     public final List<NeuronLayer<NeuronT>> hiddenLayers;
-    public final FullyConnectedLayer<NeuronT> outputLayer;
+
+    public final NeuronLayer<NeuronT> outputLayer;
+
 
     public FeedForwardNeuralNet(NeuronFactory<NeuronT> neuronFactory,
                                 int inputCount,
                                 int outputCount,
-                                LayerActivationFunction outputActivationFunction) {
+                                boolean outputApplySoftmax,
+                                ActivationFunction outputActivationFunction,
+                                double... outputActivationFunctionParameters) {
 
-        this(neuronFactory, new FullyConnectedLayer<>(neuronFactory, outputActivationFunction));
+        this(
+                neuronFactory,
+                FeedForwardNeuralNet.createOutputLayer(
+                        neuronFactory,
+                        outputCount,
+                        outputApplySoftmax,
+                        outputActivationFunction,
+                        outputActivationFunctionParameters));
 
         for (int i = 0; i < inputCount; i++) {
 
@@ -41,7 +53,6 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
             writableInputNeurons.add(inputNeuronState);
         }
 
-        this.outputLayer.setNeurons(outputCount);
         this.outputLayer.connect(inputNeurons);
     }
 
@@ -69,7 +80,7 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
         }
     }
 
-    private FeedForwardNeuralNet(NeuronFactory<NeuronT> neuronFactory, FullyConnectedLayer<NeuronT> outputLayer) {
+    private FeedForwardNeuralNet(NeuronFactory<NeuronT> neuronFactory, NeuronLayer<NeuronT> outputLayer) {
 
         if (null == neuronFactory) {
             throw new IllegalArgumentException("neuronFactory not provided");
@@ -107,9 +118,15 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
         outputLayer.randomizeWeights(random);
     }
 
-    public void addHiddenLayer(int neuronCount, LayerActivationFunction activationFunction) {
+    public void addHiddenLayer(int neuronCount,
+                               ActivationFunction activationFunction,
+                               double... activationFunctionParameters) {
 
-        FullyConnectedLayer<NeuronT> layer = new FullyConnectedLayer<>(neuronFactory, activationFunction);
+        FullyConnectedLayer<NeuronT> layer = new FullyConnectedLayer<>(
+                neuronFactory,
+                activationFunction,
+                activationFunctionParameters);
+
         layer.setNeurons(neuronCount);
 
         addNewLayer(layer);
@@ -119,17 +136,42 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
                                             int height,
                                             int kernelRadiusX,
                                             int kernelRadiusY,
-                                            LayerActivationFunction activationFunction) {
+                                            ActivationFunction activationFunction,
+                                            double... activationFunctionParameters) {
 
         ConvolutionalLayer<NeuronT> layer = new ConvolutionalLayer<>(
                 neuronFactory,
-                activationFunction,
                 width,
                 height,
                 kernelRadiusX,
-                kernelRadiusY);
+                kernelRadiusY,
+                activationFunction,
+                activationFunctionParameters);
 
         addNewLayer(layer);
+    }
+
+    private static <NeuronT extends Neuron> NeuronLayer<NeuronT> createOutputLayer(
+            NeuronFactory<NeuronT> neuronFactory,
+            int outputCount,
+            boolean outputApplySoftmax,
+            ActivationFunction outputActivationFunction,
+            double... outputActivationFunctionParameters) {
+
+        FullyConnectedLayer<NeuronT> layer = new FullyConnectedLayer<>(
+                neuronFactory,
+                outputActivationFunction,
+                outputActivationFunctionParameters);
+
+        layer.setNeurons(outputCount);
+
+        if (outputApplySoftmax) {
+
+            SoftMaxLayer<NeuronT> softMaxLayer = new SoftMaxLayer<>(neuronFactory);
+            return new CompositeLayer<>(neuronFactory, layer, softMaxLayer);
+        }
+
+        return layer;
     }
 
     private void addNewLayer(NeuronLayer<NeuronT> layer) {
@@ -137,13 +179,13 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
         SizedIterable<NeuronT> previousLayerNeurons;
 
         if (hiddenLayers.size() > 0) {
-            previousLayerNeurons = hiddenLayers.get(hiddenLayers.size() - 1).neurons();
+            previousLayerNeurons = hiddenLayers.get(hiddenLayers.size() - 1).outputNeurons();
         } else {
             previousLayerNeurons = inputNeurons;
         }
 
         layer.connect(previousLayerNeurons);
-        outputLayer.connect(layer.neurons());
+        outputLayer.connect(layer.outputNeurons());
 
         writableHiddenLayers.add(layer);
     }
@@ -171,14 +213,14 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
         for (NeuronLayer<NeuronT> layer : hiddenLayers) {
 
             layer.activate(previousNeurons, bias);
-            previousNeurons = layer.writableNeurons();
+            previousNeurons = layer.outputWritableNeurons();
         }
 
         outputLayer.activate(previousNeurons, bias);
 
         List<Double> outputs = new ArrayList<>();
 
-        for (NeuronState<NeuronT> neuron : outputLayer.writableNeurons()) {
+        for (NeuronState<NeuronT> neuron : outputLayer.outputWritableNeurons()) {
             outputs.add(neuron.postSynapse);
         }
 
@@ -194,15 +236,14 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
         // TODO: maybe do a computation version number and if it's less than current values can be initialized..
         for (NeuronLayer<NeuronT> hiddenLayer : writableHiddenLayers) {
 
-            for (NeuronState<NeuronT> neuron : hiddenLayer.writableNeurons()) {
-
-                neuron.postSynapseErrorDerivative = 0.0;
-            }
+            hiddenLayer.resetPostSynapseErrorDerivatives(0.0);
         }
 
-        for (int neuronIdx = 0; neuronIdx < outputLayer.neuronCount(); neuronIdx++) {
+        outputLayer.resetPostSynapseErrorDerivatives(0.0);
 
-            NeuronState<NeuronT> neuron = outputLayer.writableNeurons().get(neuronIdx);
+        for (int neuronIdx = 0; neuronIdx < outputLayer.outputCount(); neuronIdx++) {
+
+            NeuronState<NeuronT> neuron = outputLayer.outputWritableNeurons().get(neuronIdx);
             double neuronOutput = neuron.postSynapse;
 
             double neuronExpectedOutput = expectedOutputs.get(neuronIdx);
@@ -222,7 +263,7 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
             if (layerIndex > 0) {
 
                 previousLayer = writableHiddenLayers.get(layerIndex - 1);
-                previousNeurons = previousLayer.writableNeurons();
+                previousNeurons = previousLayer.outputWritableNeurons();
 
             } else {
 
@@ -238,7 +279,7 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
 
         List<Double> outputs = new ArrayList<>();
 
-        for (NeuronState<NeuronT> outputNeuron : outputLayer.writableNeurons()) {
+        for (NeuronState<NeuronT> outputNeuron : outputLayer.outputWritableNeurons()) {
 
             double output = outputNeuron.postSynapse;
             outputs.add(output);
@@ -249,7 +290,7 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
 
     public double getCurrentError(Collection<Double> expectedOutputs, ErrorType errorType) {
 
-        if (outputLayer.neuronCount() != expectedOutputs.size()) {
+        if (outputLayer.outputCount() != expectedOutputs.size()) {
             throw new IllegalArgumentException("Incorrect number of expected outputs");
         }
 
@@ -257,7 +298,7 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
 
         double errorSum = 0.0;
 
-        for (NeuronState<NeuronT> outputNeuron : outputLayer.writableNeurons()) {
+        for (NeuronState<NeuronT> outputNeuron : outputLayer.outputWritableNeurons()) {
 
             double output = outputNeuron.postSynapse;
             double expectedOutput = expectedOutputIterator.next();
@@ -271,7 +312,7 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
         switch (errorType) {
 
             case Rms:
-                return Math.sqrt(errorSum / (double) outputLayer.neuronCount());
+                return Math.sqrt(errorSum / (double) outputLayer.outputCount());
 
             case HalfSumOfSquares:
                 return 0.5 * errorSum;

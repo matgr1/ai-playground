@@ -6,22 +6,25 @@ import matgr.ai.common.SizedSelectIterable;
 import matgr.ai.neuralnet.Neuron;
 import matgr.ai.neuralnet.NeuronFactory;
 import matgr.ai.neuralnet.NeuronState;
+import matgr.ai.neuralnet.activation.ActivationFunction;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<NeuronT> {
+public class FullyConnectedLayer<NeuronT extends Neuron> extends ActivatableLayer<NeuronT> {
 
     private final SizedIterable<NeuronT> neurons;
     private final List<IncomingConnections> connections;
 
     private final List<NeuronState<NeuronT>> writableNeurons;
 
-    protected FullyConnectedLayer(NeuronFactory<NeuronT> neuronFactory, LayerActivationFunction activationFunction) {
+    protected FullyConnectedLayer(NeuronFactory<NeuronT> neuronFactory,
+                                  ActivationFunction activationFunction,
+                                  double... activationFunctionParameters) {
 
-        super(neuronFactory, activationFunction);
+        super(neuronFactory, activationFunction, activationFunctionParameters);
 
         this.writableNeurons = new ArrayList<>();
         this.neurons = new SizedSelectIterable<>(this.writableNeurons, n -> n.neuron);
@@ -57,17 +60,22 @@ public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<Neu
     }
 
     @Override
-    public int neuronCount() {
+    public int inputCount() {
         return writableNeurons.size();
     }
 
     @Override
-    public SizedIterable<NeuronT> neurons() {
+    public int outputCount() {
+        return writableNeurons.size();
+    }
+
+    @Override
+    public SizedIterable<NeuronT> outputNeurons() {
         return neurons;
     }
 
     @Override
-    protected SizedIterable<NeuronState<NeuronT>> writableNeurons() {
+    protected SizedIterable<NeuronState<NeuronT>> outputWritableNeurons() {
         return new DefaultSizedIterable<>(writableNeurons);
     }
 
@@ -86,6 +94,8 @@ public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<Neu
     }
 
     void setNeurons(int count) {
+
+        // TODO: could sync instead of clear...
 
         writableNeurons.clear();
 
@@ -109,7 +119,7 @@ public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<Neu
 
         connections.clear();
 
-        for (int i = 0; i < neuronCount(); i++) {
+        for (int i = 0; i < writableNeurons.size(); i++) {
 
             IncomingConnections neuronConnections = new IncomingConnections();
             connections.add(neuronConnections);
@@ -127,13 +137,13 @@ public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<Neu
 
         // TODO: this could maybe be done in one of the other loops?
         // TODO: maybe do a computation version number and if it's less than current the preSynapse can be set to 0...
-        for (NeuronState<NeuronT> neuron : writableNeurons()) {
+        for (NeuronState<NeuronT> neuron : writableNeurons) {
             neuron.preSynapse = 0.0;
         }
 
         Iterator<IncomingConnections> connectionsIterator = connections.iterator();
 
-        for (NeuronState<NeuronT> neuron : writableNeurons()) {
+        for (NeuronState<NeuronT> neuron : writableNeurons) {
 
             IncomingConnections neuronConnections = connectionsIterator.next();
             Iterator<IncomingConnection> neuronConnectionIterator = neuronConnections.connections.iterator();
@@ -162,9 +172,18 @@ public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<Neu
                 //       infinite/NaN/etc... if it fails, then set this to 0.0
                 neuron.preSynapse = 0.0;
             }
-        }
 
-        activationFunction.activate(writableNeurons());
+            activateNeuron(neuron);
+        }
+    }
+
+    @Override
+    void resetPostSynapseErrorDerivatives(double value) {
+
+        for (NeuronState<NeuronT> neuron : writableNeurons) {
+
+            neuron.postSynapseErrorDerivative = value;
+        }
     }
 
     @Override
@@ -174,15 +193,13 @@ public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<Neu
 
         Iterator<IncomingConnections> connectionsIterator = connections.iterator();
 
-        for (NeuronState<NeuronT> neuron : writableNeurons()) {
+        for (NeuronState<NeuronT> neuron : writableNeurons) {
 
             IncomingConnections neuronConnections = connectionsIterator.next();
             Iterator<IncomingConnection> neuronConnectionIterator = neuronConnections.connections.iterator();
 
-            double neuronOutput = neuron.postSynapse;
             double dE_dOut = neuron.postSynapseErrorDerivative;
-
-            double dOut_dIn = activationFunction.computeDerivative(neuronOutput);
+            double dOut_dIn = computePreSynapseOutputDerivative(neuron);
 
             double dE_dIn = dE_dOut * dOut_dIn;
 

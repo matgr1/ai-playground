@@ -7,10 +7,8 @@ import junit.framework.TestSuite;
 import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.activation.KnownActivationFunctions;
 import matgr.ai.neuralnet.feedforward.ConvolutionalLayerSizes;
-import matgr.ai.neuralnet.feedforward.DefaultLayerActivationFunction;
 import matgr.ai.neuralnet.feedforward.ErrorType;
 import matgr.ai.neuralnet.feedforward.FeedForwardNeuralNet;
-import matgr.ai.neuralnet.feedforward.LayerActivationFunction;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 
@@ -59,25 +57,26 @@ public class NeuralNetTest extends TestCase {
         final int maxSteps = 1000000;
         final double maxErrorRms = 0.01;
 
-        ActivationFunction activationFunction = KnownActivationFunctions.SIGMOID;
-        double[] activationFunctionParameters = activationFunction.defaultParameters();
-
-        LayerActivationFunction outputActivationFunction = new DefaultLayerActivationFunction(
-                activationFunction,
-                activationFunctionParameters);
+        final boolean outputApplySoftmax = false;
+        ActivationFunction outputActivationFunction = KnownActivationFunctions.SIGMOID;
+        double[] outputActivationFunctionParameters = outputActivationFunction.defaultParameters();
 
         FeedForwardNeuralNet<Neuron> neuralNet = new FeedForwardNeuralNet<>(
                 new DefaultNeuronFactory(),
                 inputCount,
                 outputCount,
-                outputActivationFunction);
+                outputApplySoftmax,
+                outputActivationFunction,
+                outputActivationFunctionParameters);
 
-        LayerActivationFunction hiddenLayerActivationFunction = new DefaultLayerActivationFunction(
-                activationFunction,
-                activationFunctionParameters);
+        ActivationFunction activationFunction = KnownActivationFunctions.SIGMOID;
+        double[] activationFunctionParameters = activationFunction.defaultParameters();
 
         for (int i = 0; i < hiddenLayers; i++) {
-            neuralNet.addHiddenLayer(neuronsPerHiddenLayer, hiddenLayerActivationFunction);
+            neuralNet.addHiddenLayer(
+                    neuronsPerHiddenLayer,
+                    activationFunction,
+                    activationFunctionParameters);
         }
 
         neuralNet.randomizeWeights(random);
@@ -127,7 +126,7 @@ public class NeuralNetTest extends TestCase {
         final int convolutionalKernelRadiusX = 1;
         final int convolutionalKernelRadiusY = 1;
 
-        final int outputCount = 1;
+        final int outputCount = 2;
 
         final double bias = 1;
 
@@ -145,29 +144,28 @@ public class NeuralNetTest extends TestCase {
 
         final int inputCount = convolutionalLayerSizes.inputWidth * convolutionalLayerSizes.inputHeight;
 
-        ActivationFunction activationFunction = KnownActivationFunctions.SIGMOID;
-        double[] activationFunctionParameters = activationFunction.defaultParameters();
-
-        LayerActivationFunction outputActivationFunction = new DefaultLayerActivationFunction(
-                activationFunction,
-                activationFunctionParameters);
+        final boolean outputApplySoftmax = true;
+        ActivationFunction outputActivationFunction = KnownActivationFunctions.IDENTITY;
+        double[] outputActivationFunctionParameters = outputActivationFunction.defaultParameters();
 
         FeedForwardNeuralNet<Neuron> neuralNet = new FeedForwardNeuralNet<>(
                 new DefaultNeuronFactory(),
                 inputCount,
                 outputCount,
-                outputActivationFunction);
+                outputApplySoftmax,
+                outputActivationFunction,
+                outputActivationFunctionParameters);
 
-        LayerActivationFunction convolutionalActivationFunction = new DefaultLayerActivationFunction(
-                activationFunction,
-                activationFunctionParameters);
+        ActivationFunction convolutionalActivationFunction = KnownActivationFunctions.SIGMOID;
+        double[] convolutionalActivationFunctionParameters = convolutionalActivationFunction.defaultParameters();
 
         neuralNet.addConvolutionalHiddenLayer(
                 convolutionInputWidth,
                 convolutionInputHeight,
                 convolutionalKernelRadiusX,
                 convolutionalKernelRadiusY,
-                convolutionalActivationFunction);
+                convolutionalActivationFunction,
+                convolutionalActivationFunctionParameters);
 
         neuralNet.randomizeWeights(random);
 
@@ -180,21 +178,24 @@ public class NeuralNetTest extends TestCase {
 
         List<TrainingSet> sets = new ArrayList<>();
 
+        int inputWidth = convolutionalLayerSizes.inputWidth;
+        int inputHeight = convolutionalLayerSizes.inputHeight;
+
+        int maxIndex = ((inputHeight - 1) * inputWidth) + (inputWidth - 1);
+
         for (int i = 0; i < numSets; i++) {
 
             // TODO: real data...
 
             int divisions = (i + 1);
 
-            double[] inputData = new double[convolutionalLayerSizes.inputHeight * convolutionalLayerSizes.inputWidth];
+            double[] inputData = new double[inputHeight * inputWidth];
 
-            int maxIndex = (convolutionalLayerSizes.inputHeight - 1) * (convolutionalLayerSizes.inputWidth - 1);
+            for (int y = 0; y < inputHeight; y++) {
 
-            for (int y = 0; y < convolutionalLayerSizes.inputHeight; y++) {
+                int rowIndex = y * inputWidth;
 
-                int rowIndex = y * convolutionalLayerSizes.inputWidth;
-
-                for (int x = 0; x < convolutionalLayerSizes.inputWidth; x++) {
+                for (int x = 0; x < inputWidth; x++) {
 
                     int index = rowIndex + x;
 
@@ -208,7 +209,12 @@ public class NeuralNetTest extends TestCase {
             List<Double> inputs = Doubles.asList(inputData);
 
             List<Double> expectedOutputs = new ArrayList<>();
-            expectedOutputs.add(divisions / (double) numSets);
+
+            double output1 = divisions / (double) numSets;
+            double output2 = 1.0 - output1;
+
+            expectedOutputs.add(output1);
+            expectedOutputs.add(output2);
 
             TrainingSet set = new TrainingSet(inputs, expectedOutputs);
             sets.add(set);

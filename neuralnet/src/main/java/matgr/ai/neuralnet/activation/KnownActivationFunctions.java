@@ -8,6 +8,7 @@ public class KnownActivationFunctions {
 
     private static Map<String, ActivationFunction> writableAll;
 
+    public static final IdentityActivationFunction IDENTITY;
     public static final SigmoidActivationFunction SIGMOID;
     public static final SoftplusActivationFunction SOFT_PLUS;
     public static final TanhActivationFunction TANH;
@@ -21,6 +22,7 @@ public class KnownActivationFunctions {
         writableAll = new HashMap<>();
         ALL = Collections.unmodifiableMap(writableAll);
 
+        IDENTITY = addFunction(IdentityActivationFunction.INSTANCE);
         SIGMOID = addFunction(SigmoidActivationFunction.INSTANCE);
         SOFT_PLUS = addFunction(SoftplusActivationFunction.INSTANCE);
         TANH = addFunction(TanhActivationFunction.INSTANCE);
