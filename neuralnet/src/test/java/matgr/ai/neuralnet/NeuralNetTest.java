@@ -8,6 +8,7 @@ import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.activation.KnownActivationFunctions;
 import matgr.ai.neuralnet.feedforward.ConvolutionalLayerSizes;
 import matgr.ai.neuralnet.feedforward.DefaultLayerActivationFunction;
+import matgr.ai.neuralnet.feedforward.ErrorType;
 import matgr.ai.neuralnet.feedforward.FeedForwardNeuralNet;
 import matgr.ai.neuralnet.feedforward.LayerActivationFunction;
 import org.apache.commons.math3.random.MersenneTwister;
@@ -56,7 +57,7 @@ public class NeuralNetTest extends TestCase {
 
         final double learningRate = 0.5;
         final int maxSteps = 1000000;
-        final double maxError = 0.0001;
+        final double maxErrorRms = 0.01;
 
         ActivationFunction activationFunction = KnownActivationFunctions.SIGMOID;
         double[] activationFunctionParameters = activationFunction.defaultParameters();
@@ -82,7 +83,7 @@ public class NeuralNetTest extends TestCase {
         neuralNet.randomizeWeights(random);
 
         List<TrainingSet> trainingSets = getBasicFunctionTrainingSets(sqrtSetCount);
-        runNetworkTrainingTest(neuralNet, bias, trainingSets, learningRate, maxSteps, maxError);
+        runNetworkTrainingTest(neuralNet, bias, trainingSets, learningRate, maxSteps, maxErrorRms);
     }
 
     private List<TrainingSet> getBasicFunctionTrainingSets(int sqrtCount) {
@@ -132,7 +133,7 @@ public class NeuralNetTest extends TestCase {
 
         final double learningRate = 0.5;
         final int maxSteps = 1000000;
-        final double maxError = 0.0001;
+        final double maxErrorRms = 0.01;
 
         final int numSets = 20;
 
@@ -171,7 +172,7 @@ public class NeuralNetTest extends TestCase {
         neuralNet.randomizeWeights(random);
 
         List<TrainingSet> trainingSets = getConvolutionalTrainingSets(convolutionalLayerSizes, numSets);
-        runNetworkTrainingTest(neuralNet, bias, trainingSets, learningRate, maxSteps, maxError);
+        runNetworkTrainingTest(neuralNet, bias, trainingSets, learningRate, maxSteps, maxErrorRms);
     }
 
     private List<TrainingSet> getConvolutionalTrainingSets(ConvolutionalLayerSizes convolutionalLayerSizes,
@@ -221,10 +222,9 @@ public class NeuralNetTest extends TestCase {
                                                List<TrainingSet> trainingSets,
                                                double learningRate,
                                                int maxSteps,
-                                               double maxError) {
+                                               double maxErrorRms) {
 
-        double error = Double.POSITIVE_INFINITY;
-        double bestError = Double.POSITIVE_INFINITY;
+        double errorRms = Double.POSITIVE_INFINITY;
 
         long startNs = System.nanoTime();
         long prevNs = startNs;
@@ -234,14 +234,14 @@ public class NeuralNetTest extends TestCase {
         int step = 0;
         for (; step < maxSteps; step++) {
 
-            double curStepMaxError = Double.NEGATIVE_INFINITY;
+            double curStepMaxErrorRms = Double.NEGATIVE_INFINITY;
 
             for (TrainingSet set : trainingSets) {
 
                 neuralNet.activate(set.inputs, bias);
 
-                error = neuralNet.getCurrentError(set.expectedOutputs);
-                curStepMaxError = Math.max(curStepMaxError, error);
+                errorRms = neuralNet.getCurrentError(set.expectedOutputs, ErrorType.Rms);
+                curStepMaxErrorRms = Math.max(curStepMaxErrorRms, errorRms);
 
                 // TODO: put this back?
                 //if (error > maxError) {
@@ -249,19 +249,17 @@ public class NeuralNetTest extends TestCase {
                 //}
             }
 
-            error = curStepMaxError;
-
-            bestError = Math.min(bestError, curStepMaxError);
+            errorRms = curStepMaxErrorRms;
 
             long nowNs = System.nanoTime();
             if ((nowNs - prevNs) > printPeriodNs) {
 
-                System.out.println(String.format("Executed %d steps", step + 1));
+                System.out.println(String.format("Executed %d steps - current error (RMS): %.6f", step + 1, errorRms));
                 prevNs = nowNs;
             }
 
             // TODO: error calculation should maybe be different... maybe max for any individual output/set?
-            if (error < maxError) {
+            if (errorRms < maxErrorRms) {
                 break;
             }
         }
@@ -269,9 +267,10 @@ public class NeuralNetTest extends TestCase {
         // print results...
 
         long nsTaken = System.nanoTime() - startNs;
-        double sTaken = (double)nsTaken / 1000000000.0;
+        double sTaken = (double) nsTaken / 1000000000.0;
         double stepsPerS = step / sTaken;
 
+        System.out.println();
         System.out.println(
                 String.format(
                         "Executed %d steps in %.6f seconds (%.2f steps per second)",
@@ -279,21 +278,24 @@ public class NeuralNetTest extends TestCase {
                         sTaken,
                         stepsPerS));
 
-        for (TrainingSet set : trainingSets) {
+        for (int i = 0; i < trainingSets.size(); i++) {
+
+            TrainingSet set = trainingSets.get(i);
 
             neuralNet.activate(set.inputs, bias);
 
             List<Double> outputs = neuralNet.getCurrentOutputs();
-            double err = neuralNet.getCurrentError(set.expectedOutputs);
+            double currErrorRms = neuralNet.getCurrentError(set.expectedOutputs, ErrorType.Rms);
 
-            System.out.println(set.inputs);
-            System.out.println(set.expectedOutputs);
-            System.out.println(outputs);
-            System.out.println(err);
             System.out.println();
+            System.out.println(String.format("Training set %d:", i));
+            System.out.println(String.format("  inputs            : %s", set.inputs));
+            System.out.println(String.format("  expected outputs  : %s", set.expectedOutputs));
+            System.out.println(String.format("  outputs           : %s", outputs));
+            System.out.println(String.format("  error (RMS)       : %.6f", currErrorRms));
         }
 
-        assertTrue(error < maxError);
+        assertTrue(errorRms < maxErrorRms);
     }
 
     private static class TrainingSet {

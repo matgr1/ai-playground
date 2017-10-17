@@ -247,7 +247,7 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
         return outputs;
     }
 
-    public double getCurrentError(Collection<Double> expectedOutputs) {
+    public double getCurrentError(Collection<Double> expectedOutputs, ErrorType errorType) {
 
         if (outputLayer.neuronCount() != expectedOutputs.size()) {
             throw new IllegalArgumentException("Incorrect number of expected outputs");
@@ -255,19 +255,29 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
 
         Iterator<Double> expectedOutputIterator = expectedOutputs.iterator();
 
-        double error = 0.0;
+        double errorSum = 0.0;
 
         for (NeuronState<NeuronT> outputNeuron : outputLayer.writableNeurons()) {
 
             double output = outputNeuron.postSynapse;
             double expectedOutput = expectedOutputIterator.next();
 
-            double difference = expectedOutput - output;
-            double outputError = (difference * difference);
+            double error = expectedOutput - output;
+            double errorSquared = (error * error);
 
-            error += (0.5 * outputError);
+            errorSum += errorSquared;
         }
 
-        return error;
+        switch (errorType) {
+
+            case Rms:
+                return Math.sqrt(errorSum / (double) outputLayer.neuronCount());
+
+            case HalfSumOfSquares:
+                return 0.5 * errorSum;
+
+            default:
+                throw new IllegalArgumentException("Unknown error type");
+        }
     }
 }
