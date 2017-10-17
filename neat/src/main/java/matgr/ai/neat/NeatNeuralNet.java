@@ -1,6 +1,6 @@
 package matgr.ai.neat;
 
-import matgr.ai.neuralnet.NeuronParameters;
+import matgr.ai.neuralnet.cyclic.NeuronParameters;
 import matgr.ai.neuralnet.cyclic.*;
 
 import java.util.SortedMap;

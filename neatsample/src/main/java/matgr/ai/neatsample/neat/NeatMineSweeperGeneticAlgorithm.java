@@ -9,7 +9,7 @@ import matgr.ai.neatsample.minesweepers.MineSweeperSettings;
 import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.Neuron;
 import matgr.ai.neuralnet.NeuronType;
-import matgr.ai.neuralnet.NeuronParameters;
+import matgr.ai.neuralnet.cyclic.NeuronParameters;
 import matgr.ai.neuralnet.cyclic.CyclicNeuron;
 import org.apache.commons.math3.random.RandomGenerator;
 
@@ -64,7 +64,7 @@ public class NeatMineSweeperGeneticAlgorithm extends NeatGeneticAlgorithm<
 
         List<NeuronParameters> outputParameters = new ArrayList<>();
 
-        for (Neuron outputNeuron : outputNeurons) {
+        for (CyclicNeuron outputNeuron : outputNeurons) {
 
             ActivationFunction activationFunction = outputNeuron.getActivationFunction();
             double[] activationFunctionParameters = outputNeuron.getActivationFunctionParameters();

@@ -1,4 +1,4 @@
-package matgr.ai.neuralnet;
+package matgr.ai.neuralnet.cyclic;
 
 import matgr.ai.neuralnet.activation.ActivationFunction;
 

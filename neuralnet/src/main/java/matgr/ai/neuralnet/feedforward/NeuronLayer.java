@@ -11,18 +11,29 @@ public abstract class NeuronLayer<NeuronT extends Neuron> {
 
     protected final NeuronFactory<NeuronT> neuronFactory;
 
-    protected NeuronLayer(NeuronFactory<NeuronT> neuronFactory) {
+    public final LayerActivationFunction activationFunction;
+
+    protected NeuronLayer(NeuronFactory<NeuronT> neuronFactory, LayerActivationFunction activationFunction) {
+
+        if (null == neuronFactory) {
+            throw new IllegalArgumentException("neuronFactory not provided");
+        }
+        if (null == activationFunction) {
+            throw new IllegalArgumentException("activationFunction not provided");
+        }
 
         this.neuronFactory = neuronFactory;
+        this.activationFunction = activationFunction;
     }
 
     protected NeuronLayer(NeuronLayer<NeuronT> other) {
 
         if (null == other) {
-            throw new IllegalArgumentException("other");
+            throw new IllegalArgumentException("other not provided");
         }
 
         this.neuronFactory = other.neuronFactory;
+        this.activationFunction = other.activationFunction;
     }
 
     protected abstract NeuronLayer<NeuronT> deepClone();

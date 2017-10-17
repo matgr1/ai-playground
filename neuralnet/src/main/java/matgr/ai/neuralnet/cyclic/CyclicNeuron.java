@@ -8,14 +8,21 @@ public class CyclicNeuron extends Neuron {
 
     public final long id;
 
+    private ActivationFunction activationFunction;
+    private double[] activationFunctionParameters;
+
     protected CyclicNeuron(NeuronType type,
                            long id,
                            ActivationFunction activationFunction,
                            double... activationFunctionParameters) {
 
-        super(type, activationFunction, activationFunctionParameters);
+        super(type);
 
         this.id = id;
+
+        if (canActivate()) {
+            setActivationFunction(activationFunction, activationFunctionParameters);
+        }
     }
 
     public static CyclicNeuron bias(long id) {
@@ -48,6 +55,59 @@ public class CyclicNeuron extends Neuron {
                 id,
                 activationFunction,
                 activationFunctionParameters);
+    }
+
+    public void setActivationFunction(ActivationFunction activationFunction, double... activationFunctionParameters) {
+
+        if (!canActivate()) {
+            throw new IllegalStateException("This neuron type cannot be activated");
+        }
+
+        if (null == activationFunction) {
+            throw new IllegalArgumentException("activationFunction");
+        }
+
+        activationFunction.validateParameters(activationFunctionParameters);
+
+        this.activationFunction = activationFunction;
+        this.activationFunctionParameters = activationFunctionParameters;
+    }
+
+    public double computeActivation(double x) {
+
+        if (!canActivate()) {
+            throw new IllegalStateException("This neuron type cannot be activated");
+        }
+
+        return activationFunction.compute(x, activationFunctionParameters);
+    }
+
+    public ActivationFunction getActivationFunction() {
+
+        if (!canActivate()) {
+            throw new IllegalStateException("This neuron type cannot be activated");
+        }
+
+        return activationFunction;
+    }
+
+    public double[] getActivationFunctionParameters() {
+
+        if (!canActivate()) {
+            throw new IllegalStateException("This neuron type cannot be activated");
+        }
+
+        return activationFunctionParameters;
+    }
+
+    public boolean canActivate() {
+        switch (type) {
+            case Hidden:
+            case Output:
+                return true;
+            default:
+                return false;
+        }
     }
 
     @Override

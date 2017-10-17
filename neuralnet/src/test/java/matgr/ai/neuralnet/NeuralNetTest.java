@@ -7,7 +7,9 @@ import junit.framework.TestSuite;
 import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.activation.KnownActivationFunctions;
 import matgr.ai.neuralnet.feedforward.ConvolutionalLayerSizes;
+import matgr.ai.neuralnet.feedforward.DefaultLayerActivationFunction;
 import matgr.ai.neuralnet.feedforward.FeedForwardNeuralNet;
+import matgr.ai.neuralnet.feedforward.LayerActivationFunction;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 
@@ -59,23 +61,22 @@ public class NeuralNetTest extends TestCase {
         ActivationFunction activationFunction = KnownActivationFunctions.SIGMOID;
         double[] activationFunctionParameters = activationFunction.defaultParameters();
 
-        List<NeuronParameters> outputParameters = new ArrayList<>();
-        for (int i = 0; i < outputCount; i++) {
-            outputParameters.add(new NeuronParameters(activationFunction, activationFunctionParameters));
-        }
+        LayerActivationFunction outputActivationFunction = new DefaultLayerActivationFunction(
+                activationFunction,
+                activationFunctionParameters);
 
         FeedForwardNeuralNet<Neuron> neuralNet = new FeedForwardNeuralNet<>(
                 new DefaultNeuronFactory(),
                 inputCount,
-                outputParameters);
+                outputCount,
+                outputActivationFunction);
 
-        List<NeuronParameters> hiddenLayerParameters = new ArrayList<>();
-        for (int i = 0; i < neuronsPerHiddenLayer; i++) {
-            hiddenLayerParameters.add(new NeuronParameters(activationFunction, activationFunctionParameters));
-        }
+        LayerActivationFunction hiddenLayerActivationFunction = new DefaultLayerActivationFunction(
+                activationFunction,
+                activationFunctionParameters);
 
         for (int i = 0; i < hiddenLayers; i++) {
-            neuralNet.addHiddenLayer(hiddenLayerParameters);
+            neuralNet.addHiddenLayer(neuronsPerHiddenLayer, hiddenLayerActivationFunction);
         }
 
         neuralNet.randomizeWeights(random);
@@ -146,23 +147,26 @@ public class NeuralNetTest extends TestCase {
         ActivationFunction activationFunction = KnownActivationFunctions.SIGMOID;
         double[] activationFunctionParameters = activationFunction.defaultParameters();
 
-        List<NeuronParameters> outputParameters = new ArrayList<>();
-        for (int i = 0; i < outputCount; i++) {
-            outputParameters.add(new NeuronParameters(activationFunction, activationFunctionParameters));
-        }
+        LayerActivationFunction outputActivationFunction = new DefaultLayerActivationFunction(
+                activationFunction,
+                activationFunctionParameters);
 
         FeedForwardNeuralNet<Neuron> neuralNet = new FeedForwardNeuralNet<>(
                 new DefaultNeuronFactory(),
                 inputCount,
-                outputParameters);
+                outputCount,
+                outputActivationFunction);
+
+        LayerActivationFunction convolutionalActivationFunction = new DefaultLayerActivationFunction(
+                activationFunction,
+                activationFunctionParameters);
 
         neuralNet.addConvolutionalHiddenLayer(
                 convolutionInputWidth,
                 convolutionInputHeight,
                 convolutionalKernelRadiusX,
                 convolutionalKernelRadiusY,
-                activationFunction,
-                activationFunctionParameters);
+                convolutionalActivationFunction);
 
         neuralNet.randomizeWeights(random);
 
@@ -222,7 +226,13 @@ public class NeuralNetTest extends TestCase {
         double error = Double.POSITIVE_INFINITY;
         double bestError = Double.POSITIVE_INFINITY;
 
-        for (int step = 0; step < maxSteps; step++) {
+        long startNs = System.nanoTime();
+        long prevNs = startNs;
+
+        long printPeriodNs = 1000000000;
+
+        int step = 0;
+        for (; step < maxSteps; step++) {
 
             double curStepMaxError = Double.NEGATIVE_INFINITY;
 
@@ -243,6 +253,13 @@ public class NeuralNetTest extends TestCase {
 
             bestError = Math.min(bestError, curStepMaxError);
 
+            long nowNs = System.nanoTime();
+            if ((nowNs - prevNs) > printPeriodNs) {
+
+                System.out.println(String.format("Executed %d steps", step + 1));
+                prevNs = nowNs;
+            }
+
             // TODO: error calculation should maybe be different... maybe max for any individual output/set?
             if (error < maxError) {
                 break;
@@ -250,6 +267,18 @@ public class NeuralNetTest extends TestCase {
         }
 
         // print results...
+
+        long nsTaken = System.nanoTime() - startNs;
+        double sTaken = (double)nsTaken / 1000000000.0;
+        double stepsPerS = step / sTaken;
+
+        System.out.println(
+                String.format(
+                        "Executed %d steps in %.6f seconds (%.2f steps per second)",
+                        step,
+                        sTaken,
+                        stepsPerS));
+
         for (TrainingSet set : trainingSets) {
 
             neuralNet.activate(set.inputs, bias);

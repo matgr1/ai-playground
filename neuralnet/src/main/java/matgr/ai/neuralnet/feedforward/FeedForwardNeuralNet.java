@@ -5,9 +5,7 @@ import matgr.ai.common.SizedIterable;
 import matgr.ai.common.SizedSelectIterable;
 import matgr.ai.neuralnet.Neuron;
 import matgr.ai.neuralnet.NeuronFactory;
-import matgr.ai.neuralnet.NeuronParameters;
 import matgr.ai.neuralnet.NeuronState;
-import matgr.ai.neuralnet.activation.ActivationFunction;
 import org.apache.commons.math3.random.RandomGenerator;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -30,13 +28,10 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
 
     public FeedForwardNeuralNet(NeuronFactory<NeuronT> neuronFactory,
                                 int inputCount,
-                                Iterable<NeuronParameters> outputNeuronsParameters) {
+                                int outputCount,
+                                LayerActivationFunction outputActivationFunction) {
 
-        this(neuronFactory, new FullyConnectedLayer<>(neuronFactory));
-
-        if (null == outputNeuronsParameters) {
-            throw new IllegalArgumentException("outputNeuronsParameters not provided");
-        }
+        this(neuronFactory, new FullyConnectedLayer<>(neuronFactory, outputActivationFunction));
 
         for (int i = 0; i < inputCount; i++) {
 
@@ -46,7 +41,7 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
             writableInputNeurons.add(inputNeuronState);
         }
 
-        this.outputLayer.setNeurons(outputNeuronsParameters);
+        this.outputLayer.setNeurons(outputCount);
         this.outputLayer.connect(inputNeurons);
     }
 
@@ -112,10 +107,10 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
         outputLayer.randomizeWeights(random);
     }
 
-    public void addHiddenLayer(Iterable<NeuronParameters> neuronParameters) {
+    public void addHiddenLayer(int neuronCount, LayerActivationFunction activationFunction) {
 
-        FullyConnectedLayer<NeuronT> layer = new FullyConnectedLayer<>(neuronFactory);
-        layer.setNeurons(neuronParameters);
+        FullyConnectedLayer<NeuronT> layer = new FullyConnectedLayer<>(neuronFactory, activationFunction);
+        layer.setNeurons(neuronCount);
 
         addNewLayer(layer);
     }
@@ -124,17 +119,15 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
                                             int height,
                                             int kernelRadiusX,
                                             int kernelRadiusY,
-                                            ActivationFunction activationFunction,
-                                            double... activationFunctionParameters) {
+                                            LayerActivationFunction activationFunction) {
 
         ConvolutionalLayer<NeuronT> layer = new ConvolutionalLayer<>(
                 neuronFactory,
+                activationFunction,
                 width,
                 height,
                 kernelRadiusX,
-                kernelRadiusY,
-                activationFunction,
-                activationFunctionParameters);
+                kernelRadiusY);
 
         addNewLayer(layer);
     }

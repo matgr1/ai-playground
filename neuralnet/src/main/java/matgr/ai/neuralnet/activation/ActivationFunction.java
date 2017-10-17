@@ -30,7 +30,7 @@ public abstract class ActivationFunction {
         return computeActivation(activationInput, parameters);
     }
 
-    public double computeDerivativeFromActivationOutput(double activationOutput, double... parameters) {
+    public double computeDerivative(double activationOutput, double... parameters) {
         validateParameters(parameters);
         return computeActivationDerivativeFromOutput(activationOutput, parameters);
     }

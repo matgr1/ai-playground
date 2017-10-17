@@ -1,51 +1,30 @@
 package matgr.ai.neuralnet;
 
-import matgr.ai.neuralnet.activation.ActivationFunction;
-
 public class Neuron {
-
-    private ActivationFunction activationFunction;
-    private double[] activationFunctionParameters;
 
     public final NeuronType type;
 
-    protected Neuron(NeuronType type,
-                     ActivationFunction activationFunction,
-                     double... activationFunctionParameters) {
+    protected Neuron(NeuronType type) {
 
         this.type = type;
-
-        if (canActivate()) {
-            setActivationFunction(activationFunction, activationFunctionParameters);
-        }
     }
 
     public static Neuron bias() {
-        return new Neuron(NeuronType.Bias, null);
+        return new Neuron(NeuronType.Bias);
     }
 
     public static Neuron input() {
-        return new Neuron(NeuronType.Input, null);
+        return new Neuron(NeuronType.Input);
     }
 
-    public static Neuron hidden(
-            ActivationFunction activationFunction,
-            double... activationFunctionParameters) {
+    public static Neuron hidden() {
 
-        return new Neuron(
-                NeuronType.Hidden,
-                activationFunction,
-                activationFunctionParameters);
+        return new Neuron(NeuronType.Hidden);
     }
 
-    public static Neuron output(
-            ActivationFunction activationFunction,
-            double... activationFunctionParameters) {
+    public static Neuron output() {
 
-        return new Neuron(
-                NeuronType.Output,
-                activationFunction,
-                activationFunctionParameters);
+        return new Neuron(NeuronType.Output);
     }
 
     public static <NeuronT extends Neuron> NeuronT deepClone(NeuronT neuron) {
@@ -60,60 +39,7 @@ public class Neuron {
         return clone;
     }
 
-    public boolean canActivate() {
-        switch (type) {
-            case Hidden:
-            case Output:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    public void setActivationFunction(ActivationFunction activationFunction, double... activationFunctionParameters) {
-
-        if (!canActivate()) {
-            throw new IllegalStateException("This neuron type cannot be activated");
-        }
-
-        if (null == activationFunction) {
-            throw new IllegalArgumentException("activationFunction");
-        }
-
-        activationFunction.validateParameters(activationFunctionParameters);
-
-        this.activationFunction = activationFunction;
-        this.activationFunctionParameters = activationFunctionParameters;
-    }
-
-    public double computeActivation(double x) {
-
-        if (!canActivate()) {
-            throw new IllegalStateException("This neuron type cannot be activated");
-        }
-
-        return activationFunction.compute(x, activationFunctionParameters);
-    }
-
-    public ActivationFunction getActivationFunction() {
-
-        if (!canActivate()) {
-            throw new IllegalStateException("This neuron type cannot be activated");
-        }
-
-        return activationFunction;
-    }
-
-    public double[] getActivationFunctionParameters() {
-
-        if (!canActivate()) {
-            throw new IllegalStateException("This neuron type cannot be activated");
-        }
-
-        return activationFunctionParameters;
-    }
-
     protected Neuron deepClone() {
-        return new Neuron(type, activationFunction, activationFunctionParameters);
+        return new Neuron(type);
     }
 }

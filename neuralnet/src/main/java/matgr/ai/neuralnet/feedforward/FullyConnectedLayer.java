@@ -5,10 +5,7 @@ import matgr.ai.common.SizedIterable;
 import matgr.ai.common.SizedSelectIterable;
 import matgr.ai.neuralnet.Neuron;
 import matgr.ai.neuralnet.NeuronFactory;
-import matgr.ai.neuralnet.NeuronParameters;
 import matgr.ai.neuralnet.NeuronState;
-import matgr.ai.neuralnet.activation.ActivationFunction;
-import matgr.ai.neuralnet.activation.KnownActivationFunctions;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.ArrayList;
@@ -22,9 +19,9 @@ public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<Neu
 
     private final List<NeuronState<NeuronT>> writableNeurons;
 
-    protected FullyConnectedLayer(NeuronFactory<NeuronT> neuronFactory) {
+    protected FullyConnectedLayer(NeuronFactory<NeuronT> neuronFactory, LayerActivationFunction activationFunction) {
 
-        super(neuronFactory);
+        super(neuronFactory, activationFunction);
 
         this.writableNeurons = new ArrayList<>();
         this.neurons = new SizedSelectIterable<>(this.writableNeurons, n -> n.neuron);
@@ -88,22 +85,16 @@ public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<Neu
         }
     }
 
-    void setNeurons(Iterable<NeuronParameters> neuronParameters) {
+    void setNeurons(int count) {
 
         writableNeurons.clear();
 
-        if (neuronParameters != null) {
+        for (int i = 0; i < count; i++) {
 
-            for (NeuronParameters parameters : neuronParameters) {
+            NeuronT newNeuron = neuronFactory.createHidden();
+            NeuronState<NeuronT> newNeuronState = new NeuronState<>(newNeuron);
 
-                ActivationFunction activationFunction = parameters.activationFunction;
-                double[] activationFunctionParameters = parameters.activationFunctionParameters;
-
-                NeuronT newNeuron = neuronFactory.createHidden(activationFunction, activationFunctionParameters);
-                NeuronState<NeuronT> newNeuronState = new NeuronState<>(newNeuron);
-
-                writableNeurons.add(newNeuronState);
-            }
+            writableNeurons.add(newNeuronState);
         }
     }
 
@@ -171,21 +162,9 @@ public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<Neu
                 //       infinite/NaN/etc... if it fails, then set this to 0.0
                 neuron.preSynapse = 0.0;
             }
-
-            ActivationFunction activationFunction = neuron.neuron.getActivationFunction();
-            double[] activationFunctionParameters = neuron.neuron.getActivationFunctionParameters();
-
-            neuron.postSynapse = activationFunction.compute(neuron.preSynapse, activationFunctionParameters);
-
-            if (Double.isNaN(neuron.postSynapse)) {
-                // NOTE: sigmoid shouldn't produce NaN, so fallback to this one for now...
-                // TODO: pass in some sort of NaN handler (with the ability to completely bail out and return a
-                //       status code from this function)... if it fails, then try this
-                neuron.postSynapse = KnownActivationFunctions.SIGMOID.compute(
-                        neuron.preSynapse,
-                        KnownActivationFunctions.SIGMOID.defaultParameters());
-            }
         }
+
+        activationFunction.activate(writableNeurons());
     }
 
     @Override
@@ -203,12 +182,7 @@ public class FullyConnectedLayer<NeuronT extends Neuron> extends NeuronLayer<Neu
             double neuronOutput = neuron.postSynapse;
             double dE_dOut = neuron.postSynapseErrorDerivative;
 
-            ActivationFunction activationFunction = neuron.neuron.getActivationFunction();
-            double[] activationFunctionParameters = neuron.neuron.getActivationFunctionParameters();
-
-            double dOut_dIn = activationFunction.computeDerivativeFromActivationOutput(
-                    neuronOutput,
-                    activationFunctionParameters);
+            double dOut_dIn = activationFunction.computeDerivative(neuronOutput);
 
             double dE_dIn = dE_dOut * dOut_dIn;
 

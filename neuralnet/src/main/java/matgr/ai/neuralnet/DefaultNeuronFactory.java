@@ -1,7 +1,5 @@
 package matgr.ai.neuralnet;
 
-import matgr.ai.neuralnet.activation.ActivationFunction;
-
 public class DefaultNeuronFactory implements NeuronFactory<Neuron> {
 
     @Override
@@ -15,14 +13,12 @@ public class DefaultNeuronFactory implements NeuronFactory<Neuron> {
     }
 
     @Override
-    public Neuron createHidden(ActivationFunction activationFunction,
-                               double[] activationFunctionParameters) {
-        return Neuron.hidden(activationFunction, activationFunctionParameters);
+    public Neuron createHidden() {
+        return Neuron.hidden();
     }
 
     @Override
-    public Neuron createOutput(ActivationFunction activationFunction,
-                               double[] activationFunctionParameters) {
-        return Neuron.output(activationFunction, activationFunctionParameters);
+    public Neuron createOutput() {
+        return Neuron.output();
     }
 }

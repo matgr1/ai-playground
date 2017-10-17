@@ -3,7 +3,7 @@ package matgr.ai.neatsample.neat;
 import matgr.ai.neat.NeatGenome;
 import matgr.ai.neatsample.minesweepers.MineField;
 import matgr.ai.neatsample.minesweepers.MineSweeperGenome;
-import matgr.ai.neuralnet.NeuronParameters;
+import matgr.ai.neuralnet.cyclic.NeuronParameters;
 
 import java.util.UUID;
 

@@ -25,14 +25,13 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
     private double[][] weights;
 
     public ConvolutionalLayer(NeuronFactory<NeuronT> neuronFactory,
+                              LayerActivationFunction activationFunction,
                               int width,
                               int height,
                               int kernelRadiusX,
-                              int kernelRadiusY,
-                              ActivationFunction activationFunction,
-                              double... activationFunctionParameters) {
+                              int kernelRadiusY) {
 
-        super(neuronFactory);
+        super(neuronFactory, activationFunction);
 
         this.sizes = new ConvolutionalLayerSizes(width, height, kernelRadiusX, kernelRadiusY);
 
@@ -45,7 +44,7 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
 
             for (int x = 0; x < this.sizes.outputWidth; x++) {
 
-                NeuronT neuron = neuronFactory.createHidden(activationFunction, activationFunctionParameters);
+                NeuronT neuron = neuronFactory.createHidden();
                 row[x] = new NeuronState<>(neuron);
             }
         }
@@ -172,15 +171,11 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
                 }
 
                 NeuronState<NeuronT> outputNeuron = outputRow[x];
-
                 outputNeuron.preSynapse = sum;
-
-                ActivationFunction activationFunction = outputNeuron.neuron.getActivationFunction();
-                double[] activationFunctionParameters = outputNeuron.neuron.getActivationFunctionParameters();
-
-                outputNeuron.postSynapse = activationFunction.compute(outputNeuron.preSynapse, activationFunctionParameters);
             }
         }
+
+        activationFunction.activate(writableNeurons());
     }
 
     @Override
@@ -210,12 +205,7 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends NeuronLayer<Neur
                 double neuronOutput = outputNeuron.postSynapse;
                 double dE_dOut = outputNeuron.postSynapseErrorDerivative;
 
-                ActivationFunction activationFunction = outputNeuron.neuron.getActivationFunction();
-                double[] activationFunctionParameters = outputNeuron.neuron.getActivationFunctionParameters();
-
-                double dOut_dIn = activationFunction.computeDerivativeFromActivationOutput(
-                        neuronOutput,
-                        activationFunctionParameters);
+                double dOut_dIn = activationFunction.computeDerivative(neuronOutput);
 
                 double dE_dIn = dE_dOut * dOut_dIn;
 
