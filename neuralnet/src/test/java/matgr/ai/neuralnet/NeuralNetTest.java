@@ -6,7 +6,7 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.activation.KnownActivationFunctions;
-import matgr.ai.neuralnet.feedforward.ConvolutionalLayerSizes;
+import matgr.ai.neuralnet.feedforward.ConvolutionDimensions;
 import matgr.ai.neuralnet.feedforward.ErrorType;
 import matgr.ai.neuralnet.feedforward.FeedForwardNeuralNet;
 import org.apache.commons.math3.random.MersenneTwister;
@@ -73,7 +73,7 @@ public class NeuralNetTest extends TestCase {
         double[] activationFunctionParameters = activationFunction.defaultParameters();
 
         for (int i = 0; i < hiddenLayers; i++) {
-            neuralNet.addHiddenLayer(
+            neuralNet.addFullyConnectedHiddenLayer(
                     neuronsPerHiddenLayer,
                     activationFunction,
                     activationFunctionParameters);
@@ -123,8 +123,13 @@ public class NeuralNetTest extends TestCase {
         final int convolutionInputWidth = 10;
         final int convolutionInputHeight = 10;
 
-        final int convolutionalKernelRadiusX = 1;
-        final int convolutionalKernelRadiusY = 1;
+        final int convolutionalKernelWidth = 3;
+        final int convolutionalKernelHeight = 3;
+
+        final int maxPoolingKernelWidth = 2;
+        final int maxPoolingKernelHeight = 2;
+        final int maxPoolingKernelStrideX = 2;
+        final int maxPoolingKernelStrideY = 2;
 
         final int outputCount = 2;
 
@@ -136,15 +141,25 @@ public class NeuralNetTest extends TestCase {
 
         final int numSets = 20;
 
-        final ConvolutionalLayerSizes convolutionalLayerSizes = new ConvolutionalLayerSizes(
+        final ConvolutionDimensions convolutionDimensions = new ConvolutionDimensions(
                 convolutionInputWidth,
                 convolutionInputHeight,
-                convolutionalKernelRadiusX,
-                convolutionalKernelRadiusY);
+                convolutionalKernelWidth,
+                convolutionalKernelHeight);
 
-        final int inputCount = convolutionalLayerSizes.inputWidth * convolutionalLayerSizes.inputHeight;
+        final int inputCount = convolutionDimensions.inputWidth * convolutionDimensions.inputHeight;
 
-        // TODO: softmax requires IDENTITY activation function? or maybe RELU or something like that?
+        ActivationFunction convolutionalActivationFunction = KnownActivationFunctions.IDENTITY;
+        double[] convolutionalActivationFunctionParameters = convolutionalActivationFunction.defaultParameters();
+
+        ActivationFunction maxPoolingActivationFunction = KnownActivationFunctions.TANH;
+        double[] maxPoolingActivationFunctionParameters = convolutionalActivationFunction.defaultParameters();
+
+        final int hiddenNeuronCount = 10;
+        ActivationFunction hiddenActivationFunction = KnownActivationFunctions.TANH;
+        double[] hiddenActivationFunctionParameters = convolutionalActivationFunction.defaultParameters();
+
+        // TODO: softmax requires IDENTITY activation function? enforce this if true?
         final boolean outputApplySoftmax = true;
         ActivationFunction outputActivationFunction = KnownActivationFunctions.IDENTITY;
         double[] outputActivationFunctionParameters = outputActivationFunction.defaultParameters();
@@ -157,30 +172,42 @@ public class NeuralNetTest extends TestCase {
                 outputActivationFunction,
                 outputActivationFunctionParameters);
 
-        ActivationFunction convolutionalActivationFunction = KnownActivationFunctions.TANH;
-        double[] convolutionalActivationFunctionParameters = convolutionalActivationFunction.defaultParameters();
-
         neuralNet.addConvolutionalHiddenLayer(
                 convolutionInputWidth,
                 convolutionInputHeight,
-                convolutionalKernelRadiusX,
-                convolutionalKernelRadiusY,
+                convolutionalKernelWidth,
+                convolutionalKernelHeight,
                 convolutionalActivationFunction,
                 convolutionalActivationFunctionParameters);
 
+        neuralNet.addMaxPoolingHiddenLayer(
+                convolutionDimensions.outputWidth,
+                convolutionDimensions.outputHeight,
+                maxPoolingKernelWidth,
+                maxPoolingKernelHeight,
+                maxPoolingKernelStrideX,
+                maxPoolingKernelStrideY,
+                maxPoolingActivationFunction,
+                maxPoolingActivationFunctionParameters);
+
+        neuralNet.addFullyConnectedHiddenLayer(
+                hiddenNeuronCount,
+                hiddenActivationFunction,
+                hiddenActivationFunctionParameters);
+
         neuralNet.randomizeWeights(random);
 
-        List<TrainingSet> trainingSets = getConvolutionalTrainingSets(convolutionalLayerSizes, numSets);
+        List<TrainingSet> trainingSets = getConvolutionalTrainingSets(convolutionDimensions, numSets);
         runNetworkTrainingTest(neuralNet, bias, trainingSets, learningRate, maxSteps, maxErrorRms);
     }
 
-    private List<TrainingSet> getConvolutionalTrainingSets(ConvolutionalLayerSizes convolutionalLayerSizes,
+    private List<TrainingSet> getConvolutionalTrainingSets(ConvolutionDimensions convolutionDimensions,
                                                            int numSets) {
 
         List<TrainingSet> sets = new ArrayList<>();
 
-        int inputWidth = convolutionalLayerSizes.inputWidth;
-        int inputHeight = convolutionalLayerSizes.inputHeight;
+        int inputWidth = convolutionDimensions.inputWidth;
+        int inputHeight = convolutionDimensions.inputHeight;
 
         int maxIndex = ((inputHeight - 1) * inputWidth) + (inputWidth - 1);
 

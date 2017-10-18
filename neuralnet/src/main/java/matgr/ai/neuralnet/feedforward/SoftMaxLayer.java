@@ -67,6 +67,7 @@ public class SoftMaxLayer<NeuronT extends Neuron> extends NeuronLayer<NeuronT> {
 
     @Override
     void randomizeWeights(RandomGenerator random) {
+
         // NOTE: nothing to do here... no weights...
     }
 

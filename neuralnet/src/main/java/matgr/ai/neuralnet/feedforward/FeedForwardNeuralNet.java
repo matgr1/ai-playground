@@ -118,9 +118,9 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
         outputLayer.randomizeWeights(random);
     }
 
-    public void addHiddenLayer(int neuronCount,
-                               ActivationFunction activationFunction,
-                               double... activationFunctionParameters) {
+    public void addFullyConnectedHiddenLayer(int neuronCount,
+                                             ActivationFunction activationFunction,
+                                             double... activationFunctionParameters) {
 
         FullyConnectedLayer<NeuronT> layer = new FullyConnectedLayer<>(
                 neuronFactory,
@@ -134,8 +134,8 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
 
     public void addConvolutionalHiddenLayer(int width,
                                             int height,
-                                            int kernelRadiusX,
-                                            int kernelRadiusY,
+                                            int kernelWidth,
+                                            int kernelHeight,
                                             ActivationFunction activationFunction,
                                             double... activationFunctionParameters) {
 
@@ -143,8 +143,31 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
                 neuronFactory,
                 width,
                 height,
-                kernelRadiusX,
-                kernelRadiusY,
+                kernelWidth,
+                kernelHeight,
+                activationFunction,
+                activationFunctionParameters);
+
+        addNewLayer(layer);
+    }
+
+    public void addMaxPoolingHiddenLayer(int width,
+                                         int height,
+                                         int kernelWidth,
+                                         int kernelHeight,
+                                         int strideX,
+                                         int strideY,
+                                         ActivationFunction activationFunction,
+                                         double... activationFunctionParameters) {
+
+        MaxPoolingLayer<NeuronT> layer = new MaxPoolingLayer<>(
+                neuronFactory,
+                width,
+                height,
+                kernelWidth,
+                kernelHeight,
+                strideX,
+                strideY,
                 activationFunction,
                 activationFunctionParameters);
 
