@@ -15,7 +15,7 @@ public class GaussianActivationFunction extends ActivationFunction {
 
     @Override
     protected double computeActivation(double activationInput, double[] parameters) {
-        return Math.exp(-(activationInput * activationInput) / 2);
+        return Math.exp(-(activationInput * activationInput));
     }
 
     @Override
