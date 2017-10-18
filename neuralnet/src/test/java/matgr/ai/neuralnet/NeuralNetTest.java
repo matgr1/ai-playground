@@ -58,7 +58,7 @@ public class NeuralNetTest extends TestCase {
         final double maxErrorRms = 0.01;
 
         final boolean outputApplySoftmax = false;
-        ActivationFunction outputActivationFunction = KnownActivationFunctions.SIGMOID;
+        ActivationFunction outputActivationFunction = KnownActivationFunctions.TANH;
         double[] outputActivationFunctionParameters = outputActivationFunction.defaultParameters();
 
         FeedForwardNeuralNet<Neuron> neuralNet = new FeedForwardNeuralNet<>(
@@ -69,7 +69,7 @@ public class NeuralNetTest extends TestCase {
                 outputActivationFunction,
                 outputActivationFunctionParameters);
 
-        ActivationFunction activationFunction = KnownActivationFunctions.SIGMOID;
+        ActivationFunction activationFunction = KnownActivationFunctions.TANH;
         double[] activationFunctionParameters = activationFunction.defaultParameters();
 
         for (int i = 0; i < hiddenLayers; i++) {
@@ -144,6 +144,7 @@ public class NeuralNetTest extends TestCase {
 
         final int inputCount = convolutionalLayerSizes.inputWidth * convolutionalLayerSizes.inputHeight;
 
+        // TODO: softmax requires IDENTITY activation function? or maybe RELU or something like that?
         final boolean outputApplySoftmax = true;
         ActivationFunction outputActivationFunction = KnownActivationFunctions.IDENTITY;
         double[] outputActivationFunctionParameters = outputActivationFunction.defaultParameters();
@@ -156,7 +157,7 @@ public class NeuralNetTest extends TestCase {
                 outputActivationFunction,
                 outputActivationFunctionParameters);
 
-        ActivationFunction convolutionalActivationFunction = KnownActivationFunctions.SIGMOID;
+        ActivationFunction convolutionalActivationFunction = KnownActivationFunctions.TANH;
         double[] convolutionalActivationFunctionParameters = convolutionalActivationFunction.defaultParameters();
 
         neuralNet.addConvolutionalHiddenLayer(
@@ -279,10 +280,11 @@ public class NeuralNetTest extends TestCase {
         System.out.println();
         System.out.println(
                 String.format(
-                        "Executed %d steps in %.6f seconds (%.2f steps per second)",
+                        "Executed %d steps in %.6f seconds (%.2f steps per second) - final error (RMS): %.6f",
                         step,
                         sTaken,
-                        stepsPerS));
+                        stepsPerS,
+                        errorRms));
 
         for (int i = 0; i < trainingSets.size(); i++) {
 

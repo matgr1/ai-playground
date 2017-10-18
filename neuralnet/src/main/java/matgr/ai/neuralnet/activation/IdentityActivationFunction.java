@@ -19,7 +19,7 @@ public class IdentityActivationFunction extends ActivationFunction {
     }
 
     @Override
-    protected double computeActivationDerivativeFromOutput(double activationOutput, double[] parameters) {
+    protected double computeActivationDerivative(double activationInput, double activationOutput, double[] parameters) {
         return 1.0;
     }
 }

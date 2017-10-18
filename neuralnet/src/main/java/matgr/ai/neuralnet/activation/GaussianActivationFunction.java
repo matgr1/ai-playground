@@ -1,7 +1,5 @@
 package matgr.ai.neuralnet.activation;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 public class GaussianActivationFunction extends ActivationFunction {
 
     public static final GaussianActivationFunction INSTANCE = new GaussianActivationFunction();
@@ -21,7 +19,7 @@ public class GaussianActivationFunction extends ActivationFunction {
     }
 
     @Override
-    protected double computeActivationDerivativeFromOutput(double activationOutput, double[] parameters) {
-        throw new NotImplementedException();
+    protected double computeActivationDerivative(double activationInput, double activationOutput, double[] parameters) {
+        return -2.0 * activationInput * activationOutput;
     }
 }

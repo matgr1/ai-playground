@@ -21,8 +21,8 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
 
     private final NeuronState<NeuronT>[][] neurons;
 
-    // TODO: bias weight?
     private double[][] weights;
+    private double biasWeight;
 
     public ConvolutionalLayer(NeuronFactory<NeuronT> neuronFactory,
                               int width,
@@ -37,7 +37,9 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
         this.sizes = new ConvolutionalLayerSizes(width, height, kernelRadiusX, kernelRadiusY);
 
         this.neurons = createNeuronArray(this.sizes.outputWidth, this.sizes.outputHeight);
+
         this.weights = new double[this.sizes.kernelHeight][this.sizes.kernelWidth];
+        this.biasWeight = 0.0;
 
         for (int y = 0; y < this.sizes.outputHeight; y++) {
 
@@ -114,6 +116,8 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
                 row[x] = getRandomWeight(random);
             }
         }
+
+        biasWeight = getRandomWeight(random);
     }
 
     @Override
@@ -154,7 +158,8 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
 
             for (int x = 0; x < this.sizes.outputWidth; x++) {
 
-                double sum = 0.0;
+                NeuronState<NeuronT> outputNeuron = outputRow[x];
+                outputNeuron.preSynapse = 0.0;
 
                 for (int kernelY = 0; kernelY < this.sizes.kernelHeight; kernelY++) {
 
@@ -172,12 +177,27 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
 
                         NeuronState<NeuronT> inputNeuron = previousLayerNeurons.get(inputIndex);
 
-                        sum += (weight * inputNeuron.postSynapse);
+                        outputNeuron.preSynapse += (weight * inputNeuron.postSynapse);
+
+                        if (Double.isNaN(outputNeuron.preSynapse)) {
+                            // TODO: pass in some sort of NaN handler (with the ability to completely bail out and
+                            //       return a status code from this function)... it should be given
+                            //       "input" and "weight" (so it can decide what to do based on input values being
+                            //       infinite/NaN/etc... if it fails, then set this to 0.0
+                            outputNeuron.preSynapse = 0.0;
+                        }
                     }
                 }
 
-                NeuronState<NeuronT> outputNeuron = outputRow[x];
-                outputNeuron.preSynapse = sum;
+                outputNeuron.preSynapse += (biasWeight * bias);
+
+                if (Double.isNaN(outputNeuron.preSynapse)) {
+                    // TODO: pass in some sort of NaN handler (with the ability to completely bail out and
+                    //       return a status code from this function)... it should be given
+                    //       "neuron.incomingBiasWeight" and "bias" (so it can decide what to do based on input values being
+                    //       infinite/NaN/etc... if it fails, then set this to 0.0
+                    outputNeuron.preSynapse = 0.0;
+                }
 
                 activateNeuron(outputNeuron);
             }
@@ -214,6 +234,8 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
             System.arraycopy(weightsRow, 0, newWeightsRow, 0, sizes.kernelWidth);
         }
 
+        double newBiasWeight = biasWeight;
+
         for (int y = 0; y < this.sizes.outputHeight; y++) {
 
             NeuronState<NeuronT>[] outputRow = neurons[y];
@@ -249,7 +271,7 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
                         double dE_dW = dE_dIn * dIn_dW;
 
                         // update incoming connection weight
-                        newWeightsRow[kernelX] = newWeightsRow[kernelX] - (dE_dW * learningRate);
+                        newWeightsRow[kernelX] -= (dE_dW * learningRate);
 
                         // update previous neuron dE/dOut
                         // TODO: don't need to compute this on the last pass
@@ -259,11 +281,16 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
                     }
                 }
 
-                // TODO: bias? per neuron?
+                // update incoming bias weight
+                double dIn_dW_Bias = bias;
+                double dE_dW_Bias = dE_dIn * dIn_dW_Bias;
+
+                newBiasWeight -= (dE_dW_Bias * learningRate);
             }
         }
 
         weights = newWeights;
+        biasWeight = newBiasWeight;
     }
 
     @Override

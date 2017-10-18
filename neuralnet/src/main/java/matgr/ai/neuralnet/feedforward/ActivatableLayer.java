@@ -53,6 +53,6 @@ public abstract class ActivatableLayer<NeuronT extends Neuron> extends NeuronLay
 
         // TODO: handle NaNs
         double neuronOutput = neuron.postSynapse;
-        return activationFunction.computeDerivative(neuronOutput, activationFunctionParameters);
+        return activationFunction.computeDerivative(neuron.postSynapse, neuronOutput, activationFunctionParameters);
     }
 }

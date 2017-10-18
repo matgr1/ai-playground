@@ -1,7 +1,5 @@
 package matgr.ai.neuralnet.activation;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 public class ReluActivationFunction extends ActivationFunction {
 
     public static final ReluActivationFunction INSTANCE = new ReluActivationFunction();
@@ -21,7 +19,12 @@ public class ReluActivationFunction extends ActivationFunction {
     }
 
     @Override
-    protected double computeActivationDerivativeFromOutput(double activationOutput, double[] parameters) {
-        throw new NotImplementedException();
+    protected double computeActivationDerivative(double activationInput, double activationOutput, double[] parameters) {
+
+        if (activationInput <= 0) {
+            return 0.0;
+        }
+
+        return 1.0;
     }
 }

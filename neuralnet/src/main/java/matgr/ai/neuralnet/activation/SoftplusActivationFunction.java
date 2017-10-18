@@ -21,7 +21,7 @@ public class SoftplusActivationFunction extends ActivationFunction {
     }
 
     @Override
-    protected double computeActivationDerivativeFromOutput(double activationOutput, double[] parameters) {
-        throw new NotImplementedException();
+    protected double computeActivationDerivative(double activationInput, double activationOutput, double[] parameters) {
+        return 1.0 / (1 + Math.exp(-activationInput));
     }
 }

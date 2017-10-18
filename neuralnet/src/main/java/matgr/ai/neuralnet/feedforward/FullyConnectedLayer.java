@@ -135,15 +135,11 @@ public class FullyConnectedLayer<NeuronT extends Neuron> extends ActivatableLaye
     @Override
     void activate(SizedIterable<NeuronState<NeuronT>> previousLayerNeurons, double bias) {
 
-        // TODO: this could maybe be done in one of the other loops?
-        // TODO: maybe do a computation version number and if it's less than current the preSynapse can be set to 0...
-        for (NeuronState<NeuronT> neuron : writableNeurons) {
-            neuron.preSynapse = 0.0;
-        }
-
         Iterator<IncomingConnections> connectionsIterator = connections.iterator();
 
         for (NeuronState<NeuronT> neuron : writableNeurons) {
+
+            neuron.preSynapse = 0.0;
 
             IncomingConnections neuronConnections = connectionsIterator.next();
             Iterator<IncomingConnection> neuronConnectionIterator = neuronConnections.connections.iterator();

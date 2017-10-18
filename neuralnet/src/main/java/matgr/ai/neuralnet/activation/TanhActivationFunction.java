@@ -1,7 +1,5 @@
 package matgr.ai.neuralnet.activation;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 public class TanhActivationFunction extends ActivationFunction {
 
     public static final TanhActivationFunction INSTANCE = new TanhActivationFunction();
@@ -21,7 +19,7 @@ public class TanhActivationFunction extends ActivationFunction {
     }
 
     @Override
-    protected double computeActivationDerivativeFromOutput(double activationOutput, double[] parameters) {
-        throw new NotImplementedException();
+    protected double computeActivationDerivative(double activationInput, double activationOutput, double[] parameters) {
+        return 1.0 - (activationOutput * activationOutput);
     }
 }
