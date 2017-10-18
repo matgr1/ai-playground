@@ -152,7 +152,7 @@ public class NeuralNetTest extends TestCase {
         ActivationFunction convolutionalActivationFunction = KnownActivationFunctions.IDENTITY;
         double[] convolutionalActivationFunctionParameters = convolutionalActivationFunction.defaultParameters();
 
-        ActivationFunction maxPoolingActivationFunction = KnownActivationFunctions.TANH;
+        ActivationFunction maxPoolingActivationFunction = KnownActivationFunctions.RELU;
         double[] maxPoolingActivationFunctionParameters = convolutionalActivationFunction.defaultParameters();
 
         final int hiddenNeuronCount = 10;
