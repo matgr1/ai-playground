@@ -54,7 +54,7 @@ public class NeuralNetTest extends TestCase {
 
         final double bias = 1;
 
-        final double learningRate = 0.5;
+        final double learningRate = 0.1;
         final int maxSteps = 1000000;
         final double maxErrorRms = 0.01;
 
@@ -131,28 +131,28 @@ public class NeuralNetTest extends TestCase {
 
     public void testConvolutional() {
 
-        final int convolutionInputWidth = 10;
-        final int convolutionInputHeight = 10;
+        final int numSets = 20;
 
-        final int convolutionalKernelWidth = 3;
-        final int convolutionalKernelHeight = 3;
+        final int convolutionInputWidth = 25;
+        final int convolutionInputHeight = 25;
+
+        final int convolutionalKernelWidth = 6;
+        final int convolutionalKernelHeight = 6;
 
         final int maxPoolingKernelWidth = 2;
         final int maxPoolingKernelHeight = 2;
         final int maxPoolingKernelStrideX = 2;
         final int maxPoolingKernelStrideY = 2;
 
-        final int outputCount = 2;
+        final int outputCount = numSets;
 
         final double bias = 1;
 
         final double learningRate = 0.1;
         final int maxSteps = 1000000;
-        final double maxErrorRms = 0.01;
+        final double maxErrorRms = 0.1;
 
         final int noProgressResetThreshold = 5000;
-
-        final int numSets = 20;
 
         final ConvolutionDimensions convolutionDimensions = new ConvolutionDimensions(
                 convolutionInputWidth,
@@ -165,6 +165,7 @@ public class NeuralNetTest extends TestCase {
         ActivationFunction convolutionalActivationFunction = KnownActivationFunctions.IDENTITY;
         double[] convolutionalActivationFunctionParameters = convolutionalActivationFunction.defaultParameters();
 
+        // TODO: one of these should be RELU?
         ActivationFunction maxPoolingActivationFunction = KnownActivationFunctions.RELU;
         double[] maxPoolingActivationFunctionParameters = convolutionalActivationFunction.defaultParameters();
 
@@ -257,13 +258,24 @@ public class NeuralNetTest extends TestCase {
 
             List<Double> inputs = Doubles.asList(inputData);
 
-            List<Double> expectedOutputs = new ArrayList<>();
 
-            double output1 = divisions / (double) numSets;
-            double output2 = 1.0 - output1;
 
-            expectedOutputs.add(output1);
-            expectedOutputs.add(output2);
+            double[] expectedOutputsArray = new double[numSets];
+            List<Double> expectedOutputs = Doubles.asList(expectedOutputsArray);
+
+            expectedOutputsArray[i] = 1.0;
+
+
+
+//            List<Double> expectedOutputs = new ArrayList<>();
+//
+//            double output1 = divisions / (double) numSets;
+//            double output2 = 1.0 - output1;
+//
+//            expectedOutputs.add(output1);
+//            expectedOutputs.add(output2);
+
+
 
             TrainingSet set = new TrainingSet(inputs, expectedOutputs);
             sets.add(set);
@@ -296,19 +308,27 @@ public class NeuralNetTest extends TestCase {
 
             double errorRms = Double.NEGATIVE_INFINITY;
 
-            for (TrainingSet set : trainingSets) {
+            // TODO: this is stochastic gradient descent... should probably do mini-batches... for mini-batches, it
+            //       might be as simple as keeping track of the sum of the dE/DW's and applying the weight adjustment
+            //       at the end (dividing by batch size) (see here: http://neuralnetworksanddeeplearning.com/chap2.html)
+            // TODO: adaptive learning rate
+            List<TrainingSet> trainingSetsList = new ArrayList<>(trainingSets);
+
+            while (trainingSetsList.size() > 0) {
+
+                int index = random.nextInt(trainingSetsList.size());
+
+                TrainingSet set = trainingSetsList.remove(index);
 
                 neuralNet.activate(set.inputs, bias);
 
                 double setErrorRms = neuralNet.getCurrentError(set.expectedOutputs, ErrorType.Rms);
                 errorRms = Math.max(errorRms, setErrorRms);
 
-                // TODO: put this back?
-                //if (error > maxError) {
-                neuralNet.backPropagate(learningRate, bias, set.expectedOutputs);
-                //}
+                if (errorRms > maxErrorRms) {
+                    neuralNet.backPropagate(learningRate, bias, set.expectedOutputs);
+                }
             }
-
 
             if (MathFunctions.fuzzyCompare(lastErrorRms, errorRms) || (errorRms > bestErrorRms)) {
 
