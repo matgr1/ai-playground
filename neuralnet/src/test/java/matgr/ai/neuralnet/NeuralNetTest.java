@@ -4,6 +4,7 @@ import com.google.common.primitives.Doubles;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import matgr.ai.math.MathFunctions;
 import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.activation.KnownActivationFunctions;
 import matgr.ai.neuralnet.feedforward.ConvolutionDimensions;
@@ -57,6 +58,8 @@ public class NeuralNetTest extends TestCase {
         final int maxSteps = 1000000;
         final double maxErrorRms = 0.01;
 
+        final int noProgressResetThreshold = 5000;
+
         final boolean outputApplySoftmax = false;
         ActivationFunction outputActivationFunction = KnownActivationFunctions.TANH;
         double[] outputActivationFunctionParameters = outputActivationFunction.defaultParameters();
@@ -82,7 +85,15 @@ public class NeuralNetTest extends TestCase {
         neuralNet.randomizeWeights(random);
 
         List<TrainingSet> trainingSets = getBasicFunctionTrainingSets(sqrtSetCount);
-        runNetworkTrainingTest(neuralNet, bias, trainingSets, learningRate, maxSteps, maxErrorRms);
+
+        runNetworkTrainingTest(
+                neuralNet,
+                bias,
+                trainingSets,
+                learningRate,
+                maxSteps,
+                maxErrorRms,
+                noProgressResetThreshold);
     }
 
     private List<TrainingSet> getBasicFunctionTrainingSets(int sqrtCount) {
@@ -135,9 +146,11 @@ public class NeuralNetTest extends TestCase {
 
         final double bias = 1;
 
-        final double learningRate = 0.5;
+        final double learningRate = 0.1;
         final int maxSteps = 1000000;
         final double maxErrorRms = 0.01;
+
+        final int noProgressResetThreshold = 5000;
 
         final int numSets = 20;
 
@@ -198,7 +211,15 @@ public class NeuralNetTest extends TestCase {
         neuralNet.randomizeWeights(random);
 
         List<TrainingSet> trainingSets = getConvolutionalTrainingSets(convolutionDimensions, numSets);
-        runNetworkTrainingTest(neuralNet, bias, trainingSets, learningRate, maxSteps, maxErrorRms);
+
+        runNetworkTrainingTest(
+                neuralNet,
+                bias,
+                trainingSets,
+                learningRate,
+                maxSteps,
+                maxErrorRms,
+                noProgressResetThreshold);
     }
 
     private List<TrainingSet> getConvolutionalTrainingSets(ConvolutionDimensions convolutionDimensions,
@@ -256,9 +277,13 @@ public class NeuralNetTest extends TestCase {
                                                List<TrainingSet> trainingSets,
                                                double learningRate,
                                                int maxSteps,
-                                               double maxErrorRms) {
+                                               double maxErrorRms,
+                                               int noProgressResetThreshold) {
 
-        double errorRms = Double.POSITIVE_INFINITY;
+        double bestErrorRms = Double.POSITIVE_INFINITY;
+        double lastErrorRms = Double.POSITIVE_INFINITY;
+
+        int noProgressCount = 0;
 
         long startNs = System.nanoTime();
         long prevNs = startNs;
@@ -266,16 +291,17 @@ public class NeuralNetTest extends TestCase {
         long printPeriodNs = 1000000000;
 
         int step = 0;
+
         for (; step < maxSteps; step++) {
 
-            double curStepMaxErrorRms = Double.NEGATIVE_INFINITY;
+            double errorRms = Double.NEGATIVE_INFINITY;
 
             for (TrainingSet set : trainingSets) {
 
                 neuralNet.activate(set.inputs, bias);
 
-                errorRms = neuralNet.getCurrentError(set.expectedOutputs, ErrorType.Rms);
-                curStepMaxErrorRms = Math.max(curStepMaxErrorRms, errorRms);
+                double setErrorRms = neuralNet.getCurrentError(set.expectedOutputs, ErrorType.Rms);
+                errorRms = Math.max(errorRms, setErrorRms);
 
                 // TODO: put this back?
                 //if (error > maxError) {
@@ -283,7 +309,18 @@ public class NeuralNetTest extends TestCase {
                 //}
             }
 
-            errorRms = curStepMaxErrorRms;
+
+            if (MathFunctions.fuzzyCompare(lastErrorRms, errorRms) || (errorRms > bestErrorRms)) {
+
+                noProgressCount++;
+
+            } else {
+
+                noProgressCount = 0;
+            }
+
+            lastErrorRms = errorRms;
+            bestErrorRms = Math.min(bestErrorRms, errorRms);
 
             long nowNs = System.nanoTime();
             if ((nowNs - prevNs) > printPeriodNs) {
@@ -295,6 +332,14 @@ public class NeuralNetTest extends TestCase {
             // TODO: error calculation should maybe be different... maybe max for any individual output/set?
             if (errorRms < maxErrorRms) {
                 break;
+            }
+
+            if (noProgressCount >= noProgressResetThreshold) {
+
+                System.out.println(String.format("No forward progress after %d steps, resetting...", noProgressCount));
+
+                neuralNet.randomizeWeights(random);
+                noProgressCount = 0;
             }
         }
 
@@ -311,7 +356,7 @@ public class NeuralNetTest extends TestCase {
                         step,
                         sTaken,
                         stepsPerS,
-                        errorRms));
+                        lastErrorRms));
 
         for (int i = 0; i < trainingSets.size(); i++) {
 
@@ -330,7 +375,7 @@ public class NeuralNetTest extends TestCase {
             System.out.println(String.format("  error (RMS)       : %.6f", currErrorRms));
         }
 
-        assertTrue(errorRms < maxErrorRms);
+        assertTrue(lastErrorRms < maxErrorRms);
     }
 
     private static class TrainingSet {
