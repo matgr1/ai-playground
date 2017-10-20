@@ -259,12 +259,10 @@ public class NeuralNetTest extends TestCase {
             List<Double> inputs = Doubles.asList(inputData);
 
 
-
             double[] expectedOutputsArray = new double[numSets];
             List<Double> expectedOutputs = Doubles.asList(expectedOutputsArray);
 
             expectedOutputsArray[i] = 1.0;
-
 
 
 //            List<Double> expectedOutputs = new ArrayList<>();
@@ -274,7 +272,6 @@ public class NeuralNetTest extends TestCase {
 //
 //            expectedOutputs.add(output1);
 //            expectedOutputs.add(output2);
-
 
 
             TrainingSet set = new TrainingSet(inputs, expectedOutputs);
