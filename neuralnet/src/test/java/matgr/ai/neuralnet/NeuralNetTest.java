@@ -4,26 +4,18 @@ import com.google.common.primitives.Doubles;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import matgr.ai.math.MathFunctions;
 import matgr.ai.neuralnet.activation.ActivationFunction;
 import matgr.ai.neuralnet.activation.KnownActivationFunctions;
 import matgr.ai.neuralnet.feedforward.ConvolutionDimensions;
-import matgr.ai.neuralnet.feedforward.ErrorType;
 import matgr.ai.neuralnet.feedforward.FeedForwardNeuralNet;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
-
 
 /**
  * Unit test for simple App.
  */
 public class NeuralNetTest extends TestCase {
-
-
-    private static final RandomGenerator random = new MersenneTwister();
 
     /**
      * Create the test case
@@ -82,11 +74,11 @@ public class NeuralNetTest extends TestCase {
                     activationFunctionParameters);
         }
 
-        neuralNet.randomizeWeights(random);
+        neuralNet.randomizeWeights(NeuralNetTestUtility.random);
 
         List<TrainingSet> trainingSets = getBasicFunctionTrainingSets(sqrtSetCount);
 
-        runNetworkTrainingTest(
+        NeuralNetTestUtility.runNetworkTrainingTest(
                 neuralNet,
                 bias,
                 trainingSets,
@@ -139,6 +131,8 @@ public class NeuralNetTest extends TestCase {
         final int convolutionalKernelWidth = 6;
         final int convolutionalKernelHeight = 6;
 
+        final int convolutionalDepth = 1;
+
         final int maxPoolingKernelWidth = 2;
         final int maxPoolingKernelHeight = 2;
         final int maxPoolingKernelStrideX = 2;
@@ -158,7 +152,8 @@ public class NeuralNetTest extends TestCase {
                 convolutionInputWidth,
                 convolutionInputHeight,
                 convolutionalKernelWidth,
-                convolutionalKernelHeight);
+                convolutionalKernelHeight,
+                convolutionalDepth);
 
         final int inputCount = convolutionDimensions.inputWidth * convolutionDimensions.inputHeight;
 
@@ -191,6 +186,7 @@ public class NeuralNetTest extends TestCase {
                 convolutionInputHeight,
                 convolutionalKernelWidth,
                 convolutionalKernelHeight,
+                convolutionalDepth,
                 convolutionalActivationFunction,
                 convolutionalActivationFunctionParameters);
 
@@ -201,6 +197,7 @@ public class NeuralNetTest extends TestCase {
                 maxPoolingKernelHeight,
                 maxPoolingKernelStrideX,
                 maxPoolingKernelStrideY,
+                convolutionalDepth,
                 maxPoolingActivationFunction,
                 maxPoolingActivationFunctionParameters);
 
@@ -209,11 +206,11 @@ public class NeuralNetTest extends TestCase {
                 hiddenActivationFunction,
                 hiddenActivationFunctionParameters);
 
-        neuralNet.randomizeWeights(random);
+        neuralNet.randomizeWeights(NeuralNetTestUtility.random);
 
         List<TrainingSet> trainingSets = getConvolutionalTrainingSets(convolutionDimensions, numSets);
 
-        runNetworkTrainingTest(
+        NeuralNetTestUtility.runNetworkTrainingTest(
                 neuralNet,
                 bias,
                 trainingSets,
@@ -279,131 +276,5 @@ public class NeuralNetTest extends TestCase {
         }
 
         return sets;
-    }
-
-    private static void runNetworkTrainingTest(FeedForwardNeuralNet<Neuron> neuralNet,
-                                               double bias,
-                                               List<TrainingSet> trainingSets,
-                                               double learningRate,
-                                               int maxSteps,
-                                               double maxErrorRms,
-                                               int noProgressResetThreshold) {
-
-        double bestErrorRms = Double.POSITIVE_INFINITY;
-        double lastErrorRms = Double.POSITIVE_INFINITY;
-
-        int noProgressCount = 0;
-
-        long startNs = System.nanoTime();
-        long prevNs = startNs;
-
-        long printPeriodNs = 1000000000;
-
-        int step = 0;
-
-        for (; step < maxSteps; step++) {
-
-            double errorRms = Double.NEGATIVE_INFINITY;
-
-            // TODO: this is stochastic gradient descent... should probably do mini-batches... for mini-batches, it
-            //       might be as simple as keeping track of the sum of the dE/DW's and applying the weight adjustment
-            //       at the end (dividing by batch size) (see here: http://neuralnetworksanddeeplearning.com/chap2.html)
-            // TODO: adaptive learning rate
-            List<TrainingSet> trainingSetsList = new ArrayList<>(trainingSets);
-
-            while (trainingSetsList.size() > 0) {
-
-                int index = random.nextInt(trainingSetsList.size());
-
-                TrainingSet set = trainingSetsList.remove(index);
-
-                neuralNet.activate(set.inputs, bias);
-
-                double setErrorRms = neuralNet.getCurrentError(set.expectedOutputs, ErrorType.Rms);
-                errorRms = Math.max(errorRms, setErrorRms);
-
-                if (errorRms > maxErrorRms) {
-                    neuralNet.backPropagate(learningRate, bias, set.expectedOutputs);
-                }
-            }
-
-            if (MathFunctions.fuzzyCompare(lastErrorRms, errorRms) || (errorRms > bestErrorRms)) {
-
-                noProgressCount++;
-
-            } else {
-
-                noProgressCount = 0;
-            }
-
-            lastErrorRms = errorRms;
-            bestErrorRms = Math.min(bestErrorRms, errorRms);
-
-            long nowNs = System.nanoTime();
-            if ((nowNs - prevNs) > printPeriodNs) {
-
-                System.out.println(String.format("Executed %d steps - current error (RMS): %.6f", step + 1, errorRms));
-                prevNs = nowNs;
-            }
-
-            // TODO: error calculation should maybe be different... maybe max for any individual output/set?
-            if (errorRms < maxErrorRms) {
-                break;
-            }
-
-            if (noProgressCount >= noProgressResetThreshold) {
-
-                System.out.println(String.format("No forward progress after %d steps, resetting...", noProgressCount));
-
-                neuralNet.randomizeWeights(random);
-                noProgressCount = 0;
-            }
-        }
-
-        // print results...
-
-        long nsTaken = System.nanoTime() - startNs;
-        double sTaken = (double) nsTaken / 1000000000.0;
-        double stepsPerS = step / sTaken;
-
-        System.out.println();
-        System.out.println(
-                String.format(
-                        "Executed %d steps in %.6f seconds (%.2f steps per second) - final error (RMS): %.6f",
-                        step,
-                        sTaken,
-                        stepsPerS,
-                        lastErrorRms));
-
-        for (int i = 0; i < trainingSets.size(); i++) {
-
-            TrainingSet set = trainingSets.get(i);
-
-            neuralNet.activate(set.inputs, bias);
-
-            List<Double> outputs = neuralNet.getCurrentOutputs();
-            double currErrorRms = neuralNet.getCurrentError(set.expectedOutputs, ErrorType.Rms);
-
-            System.out.println();
-            System.out.println(String.format("Training set %d:", i));
-            System.out.println(String.format("  inputs            : %s", set.inputs));
-            System.out.println(String.format("  expected outputs  : %s", set.expectedOutputs));
-            System.out.println(String.format("  outputs           : %s", outputs));
-            System.out.println(String.format("  error (RMS)       : %.6f", currErrorRms));
-        }
-
-        assertTrue(lastErrorRms < maxErrorRms);
-    }
-
-    private static class TrainingSet {
-
-        public List<Double> inputs;
-        public List<Double> expectedOutputs;
-
-        public TrainingSet(List<Double> inputs, List<Double> expectedOutputs) {
-
-            this.inputs = inputs;
-            this.expectedOutputs = expectedOutputs;
-        }
     }
 }

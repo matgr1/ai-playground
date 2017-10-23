@@ -136,6 +136,7 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
                                             int height,
                                             int kernelWidth,
                                             int kernelHeight,
+                                            int depth,
                                             ActivationFunction activationFunction,
                                             double... activationFunctionParameters) {
 
@@ -145,6 +146,7 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
                 height,
                 kernelWidth,
                 kernelHeight,
+                depth,
                 activationFunction,
                 activationFunctionParameters);
 
@@ -157,6 +159,7 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
                                          int kernelHeight,
                                          int strideX,
                                          int strideY,
+                                         int depth,
                                          ActivationFunction activationFunction,
                                          double... activationFunctionParameters) {
 
@@ -168,6 +171,7 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
                 kernelHeight,
                 strideX,
                 strideY,
+                depth,
                 activationFunction,
                 activationFunctionParameters);
 

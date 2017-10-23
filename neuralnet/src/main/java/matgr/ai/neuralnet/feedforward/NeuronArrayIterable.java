@@ -1,5 +1,6 @@
 package matgr.ai.neuralnet.feedforward;
 
+import matgr.ai.common.NestedIterable;
 import matgr.ai.common.NestedIterator;
 import matgr.ai.common.SizedIterable;
 import matgr.ai.neuralnet.Neuron;
@@ -14,34 +15,43 @@ class NeuronArrayIterable<NeuronT extends Neuron> implements SizedIterable<Neuro
 
     private final int width;
     private final int height;
+    private final int depth;
 
-    private final NeuronState<NeuronT>[][] neurons;
+    private final NeuronState<NeuronT>[][][] neurons;
 
-    public NeuronArrayIterable(int width, int height, NeuronState<NeuronT>[][] neurons) {
+    public NeuronArrayIterable(int width, int height, int depth, NeuronState<NeuronT>[][][] neurons) {
         this.width = width;
         this.height = height;
+        this.depth = depth;
         this.neurons = neurons;
     }
 
     @Override
     public int size() {
-        return width * height;
+        return width * height * depth;
     }
 
     @Override
     public NeuronState<NeuronT> get(int index) {
 
-        int row = index / width;
-        int col = index % width;
+        int plane = index / (width * height);
+        int planeIndex = index % (width * height);
 
-        return neurons[row][col];
+        int row = planeIndex / width;
+        int col = planeIndex % width;
+
+        return neurons[plane][row][col];
     }
 
     @Override
     @Nonnull
     public Iterator<NeuronState<NeuronT>> iterator() {
 
-        List<NeuronState<NeuronT>[]> neuronsList = Arrays.asList(neurons);
-        return new NestedIterator<>(neuronsList, Arrays::asList);
+        List<NeuronState<NeuronT>[][]> outerList = Arrays.asList(neurons);
+
+        NestedIterable<NeuronState<NeuronT>[][], NeuronState<NeuronT>[]> outerIerable =
+                new NestedIterable<>(outerList, Arrays::asList);
+
+        return new NestedIterator<>(outerIerable, Arrays::asList);
     }
 }

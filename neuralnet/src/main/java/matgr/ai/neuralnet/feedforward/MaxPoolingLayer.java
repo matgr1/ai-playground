@@ -13,7 +13,7 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
 
     private final ConvolutionDimensions dimensions;
 
-    private final NeuronState<NeuronT>[][] neurons;
+    private final NeuronState<NeuronT>[][][] neurons;
 
     protected MaxPoolingLayer(NeuronFactory<NeuronT> neuronFactory,
                               int inputWidth,
@@ -22,6 +22,7 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
                               int kernelHeight,
                               int strideX,
                               int strideY,
+                              int depth,
                               ActivationFunction activationFunction,
                               double... activationFunctionParameters) {
 
@@ -33,12 +34,14 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
                 kernelWidth,
                 kernelHeight,
                 strideX,
-                strideY);
+                strideY,
+                depth);
 
         this.neurons = ConvolutionDimensions.createHiddenNeuronArray(
                 this.neuronFactory,
                 this.dimensions.outputWidth,
-                this.dimensions.outputHeight);
+                this.dimensions.outputHeight,
+                this.dimensions.depth);
     }
 
     protected MaxPoolingLayer(MaxPoolingLayer<NeuronT> other) {
@@ -50,7 +53,8 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
         this.neurons = ConvolutionDimensions.deepCloneNeuronArray(
                 other.neurons,
                 this.dimensions.outputWidth,
-                this.dimensions.outputHeight);
+                this.dimensions.outputHeight,
+                this.dimensions.depth);
     }
 
     @Override
@@ -77,7 +81,7 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
     @Override
     SizedIterable<NeuronState<NeuronT>> outputWritableNeurons() {
 
-        return new NeuronArrayIterable<>(dimensions.outputWidth, dimensions.outputHeight, neurons);
+        return new NeuronArrayIterable<>(dimensions.outputWidth, dimensions.outputHeight, dimensions.depth, neurons);
     }
 
     @Override
@@ -120,26 +124,31 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
             throw new NotImplementedException();
         }
 
-        for (int outputY = 0; outputY < dimensions.outputHeight; outputY++) {
+        for (int planeIndex = 0; planeIndex < dimensions.depth; planeIndex++) {
 
-            NeuronState<NeuronT>[] outputRow = neurons[outputY];
+            NeuronState<NeuronT>[][] outputPlane = neurons[planeIndex];
 
-            for (int outputX = 0; outputX < dimensions.outputWidth; outputX++) {
+            for (int outputY = 0; outputY < dimensions.outputHeight; outputY++) {
 
-                NeuronState<NeuronT> outputNeuron = outputRow[outputX];
-                NeuronState<NeuronT> maxInputNeuron = getMaxInputNeuron(previousLayerNeurons, outputX, outputY);
+                NeuronState<NeuronT>[] outputRow = outputPlane[outputY];
 
-                outputNeuron.preSynapse = maxInputNeuron.postSynapse;
+                for (int outputX = 0; outputX < dimensions.outputWidth; outputX++) {
 
-                if (Double.isNaN(outputNeuron.preSynapse)) {
-                    // TODO: pass in some sort of NaN handler (with the ability to completely bail out and
-                    //       return a status code from this function)... it should be given
-                    //       "neuron.incomingBiasWeight" and "bias" (so it can decide what to do based on input values being
-                    //       infinite/NaN/etc... if it fails, then set this to 0.0
-                    outputNeuron.preSynapse = 0.0;
+                    NeuronState<NeuronT> outputNeuron = outputRow[outputX];
+                    NeuronState<NeuronT> maxInputNeuron = getMaxInputNeuron(previousLayerNeurons, outputX, outputY);
+
+                    outputNeuron.preSynapse = maxInputNeuron.postSynapse;
+
+                    if (Double.isNaN(outputNeuron.preSynapse)) {
+                        // TODO: pass in some sort of NaN handler (with the ability to completely bail out and
+                        //       return a status code from this function)... it should be given
+                        //       "neuron.incomingBiasWeight" and "bias" (so it can decide what to do based on input values being
+                        //       infinite/NaN/etc... if it fails, then set this to 0.0
+                        outputNeuron.preSynapse = 0.0;
+                    }
+
+                    activateNeuron(outputNeuron);
                 }
-
-                activateNeuron(outputNeuron);
             }
         }
     }
@@ -147,14 +156,19 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
     @Override
     void resetPostSynapseErrorDerivatives(double value) {
 
-        for (int y = 0; y < dimensions.outputHeight; y++) {
+        for (int z = 0; z < this.dimensions.depth; z++) {
 
-            NeuronState<NeuronT>[] row = neurons[y];
+            NeuronState<NeuronT>[][] plane = neurons[z];
 
-            for (int x = 0; x < dimensions.outputWidth; x++) {
+            for (int y = 0; y < dimensions.outputHeight; y++) {
 
-                NeuronState<NeuronT> neuron = row[x];
-                neuron.postSynapseErrorDerivative = value;
+                NeuronState<NeuronT>[] row = plane[y];
+
+                for (int x = 0; x < dimensions.outputWidth; x++) {
+
+                    NeuronState<NeuronT> neuron = row[x];
+                    neuron.postSynapseErrorDerivative = value;
+                }
             }
         }
     }
@@ -168,26 +182,31 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
             throw new NotImplementedException();
         }
 
-        for (int outputY = 0; outputY < dimensions.outputHeight; outputY++) {
+        for (int planeIndex = 0; planeIndex < dimensions.depth; planeIndex++) {
 
-            NeuronState<NeuronT>[] outputRow = neurons[outputY];
+            NeuronState<NeuronT>[][] outputPlane = neurons[planeIndex];
 
-            for (int outputX = 0; outputX < dimensions.outputWidth; outputX++) {
+            for (int outputY = 0; outputY < dimensions.outputHeight; outputY++) {
 
-                NeuronState<NeuronT> outputNeuron = outputRow[outputX];
-                NeuronState<NeuronT> maxInputNeuron = getMaxInputNeuron(previousLayerNeurons, outputX, outputY);
+                NeuronState<NeuronT>[] outputRow = outputPlane[outputY];
 
-                double dE_dOut = outputNeuron.postSynapseErrorDerivative;
-                double dOut_dIn = computePreSynapseOutputDerivative(outputNeuron);
+                for (int outputX = 0; outputX < dimensions.outputWidth; outputX++) {
 
-                double dE_dIn = dE_dOut * dOut_dIn;
+                    NeuronState<NeuronT> outputNeuron = outputRow[outputX];
+                    NeuronState<NeuronT> maxInputNeuron = getMaxInputNeuron(previousLayerNeurons, outputX, outputY);
 
-                // update previous neuron dE/dOut
-                // TODO: don't need to compute this on the last pass
-                double dIn_dOutPrev = 1.0; // NOTE: weights are all effectively "1"
-                double dE_dOutPrev = (dE_dIn * dIn_dOutPrev);
+                    double dE_dOut = outputNeuron.postSynapseErrorDerivative;
+                    double dOut_dIn = computePreSynapseOutputDerivative(outputNeuron);
 
-                maxInputNeuron.postSynapseErrorDerivative = dE_dOutPrev;
+                    double dE_dIn = dE_dOut * dOut_dIn;
+
+                    // update previous neuron dE/dOut
+                    // TODO: don't need to compute this on the last pass
+                    double dIn_dOutPrev = 1.0; // NOTE: weights are all effectively "1"
+                    double dE_dOutPrev = (dE_dIn * dIn_dOutPrev);
+
+                    maxInputNeuron.postSynapseErrorDerivative = dE_dOutPrev;
+                }
             }
         }
     }
