@@ -19,11 +19,17 @@ class NeuronArrayIterable<NeuronT extends Neuron> implements SizedIterable<Neuro
 
     private final NeuronState<NeuronT>[][][] neurons;
 
+    private final int planeSize;
+
     public NeuronArrayIterable(int width, int height, int depth, NeuronState<NeuronT>[][][] neurons) {
+
         this.width = width;
         this.height = height;
         this.depth = depth;
+
         this.neurons = neurons;
+
+        this.planeSize = width * height;
     }
 
     @Override
@@ -34,8 +40,8 @@ class NeuronArrayIterable<NeuronT extends Neuron> implements SizedIterable<Neuro
     @Override
     public NeuronState<NeuronT> get(int index) {
 
-        int plane = index / (width * height);
-        int planeIndex = index % (width * height);
+        int plane = index / (planeSize);
+        int planeIndex = index % (planeSize);
 
         int row = planeIndex / width;
         int col = planeIndex % width;

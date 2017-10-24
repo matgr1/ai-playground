@@ -88,27 +88,35 @@ public class MnistTest extends TestCase {
         ConvolutionDimensions firstConvolutionDim = new ConvolutionDimensions(
                 trainingImages.itemWidth,
                 trainingImages.itemHeight,
+                1,
                 5,
                 5,
-                8);
+                1);
+
+        final int firstConvolutionInstanceCount = 8;
 
         neuralNet.addConvolutionalHiddenLayer(
                 firstConvolutionDim.inputWidth,
                 firstConvolutionDim.inputHeight,
+                firstConvolutionDim.inputDepth,
                 firstConvolutionDim.kernelWidth,
                 firstConvolutionDim.kernelHeight,
-                firstConvolutionDim.depth,
+                firstConvolutionDim.kernelDepth,
+                firstConvolutionInstanceCount,
                 convolutionalActivationFunction,
                 convolutionalActivationFunctionParameters);
 
         neuralNet.addMaxPoolingHiddenLayer(
                 firstConvolutionDim.outputWidth,
                 firstConvolutionDim.outputHeight,
+                firstConvolutionDim.inputDepth,
                 maxPoolingKernelWidth,
                 maxPoolingKernelHeight,
+                1,
                 maxPoolingKernelStrideX,
                 maxPoolingKernelStrideY,
-                firstConvolutionDim.depth,
+                1,
+                firstConvolutionInstanceCount,
                 maxPoolingActivationFunction,
                 maxPoolingActivationFunctionParameters);
 

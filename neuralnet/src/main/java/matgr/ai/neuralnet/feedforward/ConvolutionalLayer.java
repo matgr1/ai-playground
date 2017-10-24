@@ -9,11 +9,13 @@ import matgr.ai.neuralnet.activation.ActivationFunction;
 import org.apache.commons.math3.random.RandomGenerator;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.lang.reflect.Array;
+
 public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer<NeuronT> {
 
     private final ConvolutionDimensions dimensions;
 
-    private ConvolutionInstance[] weights;
+    private ConvolutionInstance<NeuronT>[] instances;
 
     public ConvolutionalLayer(NeuronFactory<NeuronT> neuronFactory,
                               int inputWidth,
@@ -36,18 +38,7 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
                 kernelHeight,
                 kernelDepth);
 
-        this.neurons = ConvolutionDimensions.createHiddenNeuronArray(
-                this.neuronFactory,
-                this.dimensions.outputWidth,
-                this.dimensions.outputHeight,
-                this.dimensions.outputDepth);
-
-        this.weights = new double
-                [this.dimensions.kernelDepth]
-                [this.dimensions.kernelHeight]
-                [this.dimensions.kernelWidth];
-
-        this.biasWeight = 0.0;
+        this.instances = createInstanceArray(this.neuronFactory, this.dimensions, instances);
     }
 
     protected ConvolutionalLayer(ConvolutionalLayer<NeuronT> other) {
@@ -56,29 +47,11 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
 
         this.dimensions = other.dimensions.deepClone();
 
-        this.neurons = ConvolutionDimensions.deepCloneNeuronArray(
-                other.neurons,
-                this.dimensions.outputWidth,
-                this.dimensions.outputHeight,
-                this.dimensions.outputDepth);
+        this.instances = createEmptyInstanceArray(other.instances.length);
 
-        this.weights = new double
-                [this.dimensions.kernelDepth]
-                [this.dimensions.kernelHeight]
-                [this.dimensions.kernelWidth];
+        for (int i = 0; i < other.instances.length; i++) {
 
-        for (int z = 0; z < this.dimensions.kernelDepth; z++) {
-
-            double[][] sourcePlane = other.weights[z];
-            double[][] targetPlane = this.weights[z];
-
-            for (int y = 0; y < this.dimensions.kernelHeight; y++) {
-
-                double[] sourceRow = sourcePlane[y];
-                double[] targetRow = targetPlane[y];
-
-                System.arraycopy(sourceRow, 0, targetRow, 0, this.dimensions.kernelWidth);
-            }
+            this.instances[i] = other.instances[i].deepClone();
         }
     }
 
@@ -101,32 +74,19 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
     @Override
     protected SizedIterable<NeuronState<NeuronT>> outputWritableNeurons() {
 
-        return new NeuronArrayIterable<>(
-                dimensions.outputWidth,
-                dimensions.outputHeight,
-                dimensions.outputDepth,
-                neurons);
+        return new ConvolutionInstanceNeuronIterable<>(
+                this.dimensions.outputWidth,
+                this.dimensions.outputHeight,
+                this.dimensions.outputDepth,
+                this.instances);
     }
 
     @Override
     void randomizeWeights(RandomGenerator random) {
 
-        for (int z = 0; z < this.dimensions.kernelDepth; z++) {
-
-            double[][] plane = weights[z];
-
-            for (int y = 0; y < dimensions.kernelHeight; y++) {
-
-                double[] row = plane[y];
-
-                for (int x = 0; x < dimensions.kernelWidth; x++) {
-                    row[x] = getRandomWeight(random);
-                }
-            }
+        for (ConvolutionInstance<NeuronT> instance : instances) {
+            instance.randomizeWeights(random, NeuronLayer::getRandomWeight);
         }
-
-        // TODO: bias weight per plane?
-        biasWeight = getRandomWeight(random);
     }
 
     @Override
@@ -168,10 +128,16 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
             throw new NotImplementedException();
         }
 
-        for (int planeIndex = 0; planeIndex < dimensions.depth; planeIndex++) {
+        if ((dimensions.kernelDepth != 1) || (dimensions.inputDepth != 1) || (dimensions.outputDepth != 1)) {
 
-            NeuronState<NeuronT>[][] outputPlane = neurons[planeIndex];
-            double[][] weightsPlane = weights[planeIndex];
+            // TODO: handle this
+            throw new NotImplementedException();
+        }
+
+        for (ConvolutionInstance<NeuronT> instance : instances) {
+
+            NeuronState<NeuronT>[][] outputPlane = instance.neurons[0];
+            double[][] weightsPlane = instance.weights[0];
 
             for (int outputY = 0; outputY < dimensions.outputHeight; outputY++) {
 
@@ -210,7 +176,7 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
                         }
                     }
 
-                    outputNeuron.preSynapse += (biasWeight * bias);
+                    outputNeuron.preSynapse += (instance.biasWeight * bias);
 
                     if (Double.isNaN(outputNeuron.preSynapse)) {
                         // TODO: pass in some sort of NaN handler (with the ability to completely bail out and
@@ -229,18 +195,21 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
     @Override
     void resetPostSynapseErrorDerivatives(double value) {
 
-        for (int z = 0; z < this.dimensions.depth; z++) {
+        for (ConvolutionInstance<NeuronT> instance : instances) {
 
-            NeuronState<NeuronT>[][] plane = neurons[z];
+            for (int z = 0; z < this.dimensions.outputDepth; z++) {
 
-            for (int y = 0; y < dimensions.outputHeight; y++) {
+                NeuronState<NeuronT>[][] plane = instance.neurons[z];
 
-                NeuronState<NeuronT>[] row = plane[y];
+                for (int y = 0; y < dimensions.outputHeight; y++) {
 
-                for (int x = 0; x < dimensions.outputWidth; x++) {
+                    NeuronState<NeuronT>[] row = plane[y];
 
-                    NeuronState<NeuronT> neuron = row[x];
-                    neuron.postSynapseErrorDerivative = value;
+                    for (int x = 0; x < dimensions.outputWidth; x++) {
+
+                        NeuronState<NeuronT> neuron = row[x];
+                        neuron.postSynapseErrorDerivative = value;
+                    }
                 }
             }
         }
@@ -258,87 +227,99 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
             throw new NotImplementedException();
         }
 
-        double[][][] newWeights = new double[dimensions.depth][dimensions.kernelHeight][dimensions.kernelWidth];
+        if ((dimensions.kernelDepth != 1) || (dimensions.inputDepth != 1) || (dimensions.outputDepth != 1)) {
 
-        for (int z = 0; z < this.dimensions.depth; z++) {
-
-            double[][] weightsPlane = weights[z];
-            double[][] newWeightsPlane = newWeights[z];
-
-            for (int y = 0; y < dimensions.kernelHeight; y++) {
-
-                double[] weightsRow = weightsPlane[y];
-                double[] newWeightsRow = newWeightsPlane[y];
-
-                System.arraycopy(weightsRow, 0, newWeightsRow, 0, dimensions.kernelWidth);
-            }
+            // TODO: handle this
+            throw new NotImplementedException();
         }
 
-        double newBiasWeight = biasWeight;
+        for (ConvolutionInstance<NeuronT> instance : instances) {
 
-        for (int planeIndex = 0; planeIndex < dimensions.depth; planeIndex++) {
+            double[][][] newWeights = new double
+                    [dimensions.kernelDepth]
+                    [dimensions.kernelHeight]
+                    [dimensions.kernelWidth];
 
-            NeuronState<NeuronT>[][] outputPlane = neurons[planeIndex];
+            for (int z = 0; z < this.dimensions.kernelDepth; z++) {
 
-            double[][] weightsPlane = weights[planeIndex];
-            double[][] newWeightsPlane = newWeights[planeIndex];
+                double[][] weightsPlane = instance.weights[z];
+                double[][] newWeightsPlane = newWeights[z];
 
-            for (int outputY = 0; outputY < dimensions.outputHeight; outputY++) {
+                for (int y = 0; y < dimensions.kernelHeight; y++) {
 
-                NeuronState<NeuronT>[] outputRow = outputPlane[outputY];
+                    double[] weightsRow = weightsPlane[y];
+                    double[] newWeightsRow = newWeightsPlane[y];
 
-                for (int outputX = 0; outputX < dimensions.outputWidth; outputX++) {
-
-                    NeuronState<NeuronT> outputNeuron = outputRow[outputX];
-
-                    // TODO: share this with FullyConnectedLayer
-                    double dE_dOut = outputNeuron.postSynapseErrorDerivative;
-                    double dOut_dIn = computePreSynapseOutputDerivative(outputNeuron);
-
-                    double dE_dIn = dE_dOut * dOut_dIn;
-
-                    for (int kernelY = 0; kernelY < dimensions.kernelHeight; kernelY++) {
-
-                        double[] weightsRow = weightsPlane[kernelY];
-                        double[] newWeightsRow = newWeightsPlane[kernelY];
-
-                        int inputY = kernelY + outputY;
-                        int inputRowIndex = inputY * dimensions.inputWidth;
-
-                        for (int kernelX = 0; kernelX < dimensions.kernelWidth; kernelX++) {
-
-                            double currentWeight = weightsRow[kernelX];
-
-                            int inputX = kernelX + outputX;
-                            int inputIndex = inputRowIndex + inputX;
-
-                            NeuronState<NeuronT> previousNeuron = previousLayerNeurons.get(inputIndex);
-
-                            double dIn_dW = previousNeuron.postSynapse;
-                            double dE_dW = dE_dIn * dIn_dW;
-
-                            // update incoming connection weight
-                            newWeightsRow[kernelX] -= (dE_dW * learningRate);
-
-                            // update previous neuron dE/dOut
-                            // TODO: don't need to compute this on the last pass
-                            double dIn_dOutPrev = currentWeight;
-                            double dE_dOutPrev = (dE_dIn * dIn_dOutPrev);
-                            previousNeuron.postSynapseErrorDerivative += dE_dOutPrev;
-                        }
-                    }
-
-                    // update incoming bias weight
-                    double dIn_dW_Bias = bias;
-                    double dE_dW_Bias = dE_dIn * dIn_dW_Bias;
-
-                    newBiasWeight -= (dE_dW_Bias * learningRate);
+                    System.arraycopy(weightsRow, 0, newWeightsRow, 0, dimensions.kernelWidth);
                 }
             }
-        }
 
-        weights = newWeights;
-        biasWeight = newBiasWeight;
+            double newBiasWeight = instance.biasWeight;
+
+            for (int planeIndex = 0; planeIndex < dimensions.outputDepth; planeIndex++) {
+
+                NeuronState<NeuronT>[][] outputPlane = instance.neurons[planeIndex];
+
+                double[][] weightsPlane = instance.weights[planeIndex];
+                double[][] newWeightsPlane = newWeights[planeIndex];
+
+                for (int outputY = 0; outputY < dimensions.outputHeight; outputY++) {
+
+                    NeuronState<NeuronT>[] outputRow = outputPlane[outputY];
+
+                    for (int outputX = 0; outputX < dimensions.outputWidth; outputX++) {
+
+                        NeuronState<NeuronT> outputNeuron = outputRow[outputX];
+
+                        // TODO: share this with FullyConnectedLayer
+                        double dE_dOut = outputNeuron.postSynapseErrorDerivative;
+                        double dOut_dIn = computePreSynapseOutputDerivative(outputNeuron);
+
+                        double dE_dIn = dE_dOut * dOut_dIn;
+
+                        for (int kernelY = 0; kernelY < dimensions.kernelHeight; kernelY++) {
+
+                            double[] weightsRow = weightsPlane[kernelY];
+                            double[] newWeightsRow = newWeightsPlane[kernelY];
+
+                            int inputY = kernelY + outputY;
+                            int inputRowIndex = inputY * dimensions.inputWidth;
+
+                            for (int kernelX = 0; kernelX < dimensions.kernelWidth; kernelX++) {
+
+                                double currentWeight = weightsRow[kernelX];
+
+                                int inputX = kernelX + outputX;
+                                int inputIndex = inputRowIndex + inputX;
+
+                                NeuronState<NeuronT> previousNeuron = previousLayerNeurons.get(inputIndex);
+
+                                double dIn_dW = previousNeuron.postSynapse;
+                                double dE_dW = dE_dIn * dIn_dW;
+
+                                // update incoming connection weight
+                                newWeightsRow[kernelX] -= (dE_dW * learningRate);
+
+                                // update previous neuron dE/dOut
+                                // TODO: don't need to compute this on the last pass
+                                double dIn_dOutPrev = currentWeight;
+                                double dE_dOutPrev = (dE_dIn * dIn_dOutPrev);
+                                previousNeuron.postSynapseErrorDerivative += dE_dOutPrev;
+                            }
+                        }
+
+                        // update incoming bias weight
+                        double dIn_dW_Bias = bias;
+                        double dE_dW_Bias = dE_dIn * dIn_dW_Bias;
+
+                        newBiasWeight -= (dE_dW_Bias * learningRate);
+                    }
+                }
+            }
+
+            instance.weights = newWeights;
+            instance.biasWeight = newBiasWeight;
+        }
     }
 
     @Override
@@ -346,16 +327,27 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
         return new ConvolutionalLayer<>(this);
     }
 
-    private class ConvolutionInstance{
+    private ConvolutionInstance<NeuronT>[] createInstanceArray(NeuronFactory<NeuronT> neuronFactory,
+                                                               ConvolutionDimensions dimensions,
+                                                               int count) {
 
-        public NeuronState<NeuronT>[][][] neurons;
+        ConvolutionInstance<NeuronT>[] instances = createEmptyInstanceArray(count);
 
-        public double[][] weights;
-        public double biasWeight;
+        for (int i = 0; i < count; i++) {
 
-        public ConvolutionInstance(ConvolutionDimensions dimensions) {
-            this.weights = weights;
-            this.biasWeight = biasWeight;
+            instances[i] = new ConvolutionInstance<>(neuronFactory, dimensions);
         }
+
+        return instances;
+    }
+
+    private ConvolutionInstance<NeuronT>[] createEmptyInstanceArray(int count) {
+
+        @SuppressWarnings("unchecked")
+        ConvolutionInstance<NeuronT>[] instances = (ConvolutionInstance<NeuronT>[]) Array.newInstance(
+                NeuronState.class,
+                count);
+
+        return instances;
     }
 }

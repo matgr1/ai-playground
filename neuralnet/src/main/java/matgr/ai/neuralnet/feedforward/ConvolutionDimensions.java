@@ -94,7 +94,7 @@ public class ConvolutionDimensions {
             throw new IllegalArgumentException("Invalid vertical stride");
         }
         if (strideZ > kernelDepth) {
-            throw new IllegalArgumentException("Invalid depth stride");
+            throw new IllegalArgumentException("Invalid outputDepth stride");
         }
 
         this.kernelWidth = kernelWidth;
@@ -119,13 +119,13 @@ public class ConvolutionDimensions {
         this.outputDepth = 1 + (this.inputDepth - this.kernelDepth + (2 * paddingZ)) / strideZ;
 
         if (this.outputWidth < 0) {
-            throw new IllegalArgumentException("Invalid kernel width");
+            throw new IllegalArgumentException("Invalid kernel outputWidth");
         }
         if (this.outputHeight < 0) {
-            throw new IllegalArgumentException("Invalid kernel height");
+            throw new IllegalArgumentException("Invalid kernel outputHeight");
         }
         if (this.outputDepth < 0) {
-            throw new IllegalArgumentException("Invalid kernel depth");
+            throw new IllegalArgumentException("Invalid kernel outputDepth");
         }
     }
 

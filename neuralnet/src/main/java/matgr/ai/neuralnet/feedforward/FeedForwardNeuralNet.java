@@ -134,9 +134,11 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
 
     public void addConvolutionalHiddenLayer(int width,
                                             int height,
+                                            int depth,
                                             int kernelWidth,
                                             int kernelHeight,
-                                            int depth,
+                                            int kernelDepth,
+                                            int instances,
                                             ActivationFunction activationFunction,
                                             double... activationFunctionParameters) {
 
@@ -144,9 +146,11 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
                 neuronFactory,
                 width,
                 height,
+                depth,
                 kernelWidth,
                 kernelHeight,
-                depth,
+                kernelDepth,
+                instances,
                 activationFunction,
                 activationFunctionParameters);
 
@@ -155,11 +159,14 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
 
     public void addMaxPoolingHiddenLayer(int width,
                                          int height,
+                                         int depth,
                                          int kernelWidth,
                                          int kernelHeight,
+                                         int kernelDepth,
                                          int strideX,
                                          int strideY,
-                                         int depth,
+                                         int strideZ,
+                                         int instances,
                                          ActivationFunction activationFunction,
                                          double... activationFunctionParameters) {
 
@@ -167,11 +174,14 @@ public class FeedForwardNeuralNet<NeuronT extends Neuron> {
                 neuronFactory,
                 width,
                 height,
+                depth,
                 kernelWidth,
                 kernelHeight,
+                kernelDepth,
                 strideX,
                 strideY,
-                depth,
+                strideZ,
+                instances,
                 activationFunction,
                 activationFunctionParameters);
 
