@@ -56,13 +56,18 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
     }
 
     @Override
+    protected ConvolutionalLayer<NeuronT> deepClone() {
+        return new ConvolutionalLayer<>(this);
+    }
+
+    @Override
     public int inputCount() {
         return dimensions.inputCount();
     }
 
     @Override
     public int outputCount() {
-        return dimensions.outputCount();
+        return instances.length * dimensions.outputCount();
     }
 
     @Override
@@ -322,11 +327,6 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
         }
     }
 
-    @Override
-    protected ConvolutionalLayer<NeuronT> deepClone() {
-        return new ConvolutionalLayer<>(this);
-    }
-
     private ConvolutionInstance<NeuronT>[] createInstanceArray(NeuronFactory<NeuronT> neuronFactory,
                                                                ConvolutionDimensions dimensions,
                                                                int count) {
@@ -345,7 +345,7 @@ public class ConvolutionalLayer<NeuronT extends Neuron> extends ActivatableLayer
 
         @SuppressWarnings("unchecked")
         ConvolutionInstance<NeuronT>[] instances = (ConvolutionInstance<NeuronT>[]) Array.newInstance(
-                NeuronState.class,
+                ConvolutionInstance.class,
                 count);
 
         return instances;

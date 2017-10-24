@@ -93,7 +93,17 @@ public class MnistTest extends TestCase {
                 5,
                 1);
 
+        // TOOD: make a firstPoolingDimensions that this gets values from...
+        ConvolutionDimensions secondConvolutionDim = new ConvolutionDimensions(
+                firstConvolutionDim.outputWidth / 2,
+                firstConvolutionDim.outputHeight / 2,
+                1,
+                5,
+                5,
+                1);
+
         final int firstConvolutionInstanceCount = 8;
+        final int secondConvolutionInstanceCount = 16;
 
         neuralNet.addConvolutionalHiddenLayer(
                 firstConvolutionDim.inputWidth,
@@ -117,6 +127,31 @@ public class MnistTest extends TestCase {
                 maxPoolingKernelStrideY,
                 1,
                 firstConvolutionInstanceCount,
+                maxPoolingActivationFunction,
+                maxPoolingActivationFunctionParameters);
+
+        neuralNet.addConvolutionalHiddenLayer(
+                secondConvolutionDim.inputWidth,
+                secondConvolutionDim.inputHeight,
+                secondConvolutionDim.inputDepth,
+                secondConvolutionDim.kernelWidth,
+                secondConvolutionDim.kernelHeight,
+                secondConvolutionDim.kernelDepth,
+                secondConvolutionInstanceCount,
+                convolutionalActivationFunction,
+                convolutionalActivationFunctionParameters);
+
+        neuralNet.addMaxPoolingHiddenLayer(
+                secondConvolutionDim.outputWidth,
+                secondConvolutionDim.outputHeight,
+                secondConvolutionDim.inputDepth,
+                maxPoolingKernelWidth,
+                maxPoolingKernelHeight,
+                1,
+                maxPoolingKernelStrideX,
+                maxPoolingKernelStrideY,
+                1,
+                secondConvolutionInstanceCount,
                 maxPoolingActivationFunction,
                 maxPoolingActivationFunctionParameters);
 

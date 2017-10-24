@@ -127,16 +127,21 @@ public class NeuralNetTest extends TestCase {
 
         final int convolutionInputWidth = 25;
         final int convolutionInputHeight = 25;
+        final int convolutionInputDepth = 1;
 
         final int convolutionalKernelWidth = 6;
         final int convolutionalKernelHeight = 6;
+        final int convolutionalKernelDepth = 1;
 
-        final int convolutionalDepth = 1;
+        final int convolutionInstances = 1;
 
         final int maxPoolingKernelWidth = 2;
         final int maxPoolingKernelHeight = 2;
+        final int maxPoolingKernelDepth = 1;
+
         final int maxPoolingKernelStrideX = 2;
         final int maxPoolingKernelStrideY = 2;
+        final int maxPoolingKernelStrideZ = 1;
 
         final int outputCount = numSets;
 
@@ -151,9 +156,10 @@ public class NeuralNetTest extends TestCase {
         final ConvolutionDimensions convolutionDimensions = new ConvolutionDimensions(
                 convolutionInputWidth,
                 convolutionInputHeight,
+                convolutionInputDepth,
                 convolutionalKernelWidth,
                 convolutionalKernelHeight,
-                convolutionalDepth);
+                convolutionalKernelDepth);
 
         final int inputCount = convolutionDimensions.inputWidth * convolutionDimensions.inputHeight;
 
@@ -184,20 +190,25 @@ public class NeuralNetTest extends TestCase {
         neuralNet.addConvolutionalHiddenLayer(
                 convolutionInputWidth,
                 convolutionInputHeight,
+                convolutionInputDepth,
                 convolutionalKernelWidth,
                 convolutionalKernelHeight,
-                convolutionalDepth,
+                convolutionalKernelDepth,
+                convolutionInstances,
                 convolutionalActivationFunction,
                 convolutionalActivationFunctionParameters);
 
         neuralNet.addMaxPoolingHiddenLayer(
                 convolutionDimensions.outputWidth,
                 convolutionDimensions.outputHeight,
+                convolutionDimensions.outputDepth,
                 maxPoolingKernelWidth,
                 maxPoolingKernelHeight,
+                maxPoolingKernelDepth,
                 maxPoolingKernelStrideX,
                 maxPoolingKernelStrideY,
-                convolutionalDepth,
+                maxPoolingKernelStrideZ,
+                convolutionInstances,
                 maxPoolingActivationFunction,
                 maxPoolingActivationFunctionParameters);
 

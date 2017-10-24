@@ -9,20 +9,25 @@ import matgr.ai.neuralnet.activation.ActivationFunction;
 import org.apache.commons.math3.random.RandomGenerator;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.lang.reflect.Array;
+
 public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<NeuronT> {
 
     private final ConvolutionDimensions dimensions;
 
-    private final NeuronState<NeuronT>[][][] neurons;
+    private MaxPoolingInstance<NeuronT>[] instances;
 
     protected MaxPoolingLayer(NeuronFactory<NeuronT> neuronFactory,
                               int inputWidth,
                               int inputHeight,
+                              int inputHDepth,
                               int kernelWidth,
                               int kernelHeight,
+                              int kernelDepth,
                               int strideX,
                               int strideY,
-                              int depth,
+                              int strideZ,
+                              int instances,
                               ActivationFunction activationFunction,
                               double... activationFunctionParameters) {
 
@@ -31,17 +36,15 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
         this.dimensions = new ConvolutionDimensions(
                 inputWidth,
                 inputHeight,
+                inputHDepth,
                 kernelWidth,
                 kernelHeight,
+                kernelDepth,
                 strideX,
                 strideY,
-                depth);
+                strideZ);
 
-        this.neurons = ConvolutionDimensions.createHiddenNeuronArray(
-                this.neuronFactory,
-                this.dimensions.outputWidth,
-                this.dimensions.outputHeight,
-                this.dimensions.depth);
+        this.instances = createInstanceArray(this.neuronFactory, this.dimensions, instances);
     }
 
     protected MaxPoolingLayer(MaxPoolingLayer<NeuronT> other) {
@@ -50,11 +53,12 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
 
         this.dimensions = other.dimensions.deepClone();
 
-        this.neurons = ConvolutionDimensions.deepCloneNeuronArray(
-                other.neurons,
-                this.dimensions.outputWidth,
-                this.dimensions.outputHeight,
-                this.dimensions.depth);
+        this.instances = createEmptyInstanceArray(other.instances.length);
+
+        for (int i = 0; i < other.instances.length; i++) {
+
+            this.instances[i] = other.instances[i].deepClone();
+        }
     }
 
     @Override
@@ -64,12 +68,12 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
 
     @Override
     public int inputCount() {
-        return dimensions.inputCount();
+        return instances.length * dimensions.inputCount();
     }
 
     @Override
     public int outputCount() {
-        return dimensions.outputCount();
+        return instances.length * dimensions.outputCount();
     }
 
     @Override
@@ -81,7 +85,11 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
     @Override
     SizedIterable<NeuronState<NeuronT>> outputWritableNeurons() {
 
-        return new NeuronArrayIterable<>(dimensions.outputWidth, dimensions.outputHeight, dimensions.depth, neurons);
+        return new MaxPoolingInstanceNeuronIterable<>(
+                this.dimensions.outputWidth,
+                this.dimensions.outputHeight,
+                this.dimensions.outputDepth,
+                this.instances);
     }
 
     @Override
@@ -124,9 +132,15 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
             throw new NotImplementedException();
         }
 
-        for (int planeIndex = 0; planeIndex < dimensions.depth; planeIndex++) {
+        if ((dimensions.kernelDepth != 1) || (dimensions.inputDepth != 1) || (dimensions.outputDepth != 1)) {
 
-            NeuronState<NeuronT>[][] outputPlane = neurons[planeIndex];
+            // TODO: handle this
+            throw new NotImplementedException();
+        }
+
+        for (MaxPoolingInstance<NeuronT> instance : instances) {
+
+            NeuronState<NeuronT>[][] outputPlane = instance.neurons[0];
 
             for (int outputY = 0; outputY < dimensions.outputHeight; outputY++) {
 
@@ -156,18 +170,21 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
     @Override
     void resetPostSynapseErrorDerivatives(double value) {
 
-        for (int z = 0; z < this.dimensions.depth; z++) {
+        for (MaxPoolingInstance<NeuronT> instance : instances) {
 
-            NeuronState<NeuronT>[][] plane = neurons[z];
+            for (int z = 0; z < this.dimensions.outputDepth; z++) {
 
-            for (int y = 0; y < dimensions.outputHeight; y++) {
+                NeuronState<NeuronT>[][] plane = instance.neurons[z];
 
-                NeuronState<NeuronT>[] row = plane[y];
+                for (int y = 0; y < dimensions.outputHeight; y++) {
 
-                for (int x = 0; x < dimensions.outputWidth; x++) {
+                    NeuronState<NeuronT>[] row = plane[y];
 
-                    NeuronState<NeuronT> neuron = row[x];
-                    neuron.postSynapseErrorDerivative = value;
+                    for (int x = 0; x < dimensions.outputWidth; x++) {
+
+                        NeuronState<NeuronT> neuron = row[x];
+                        neuron.postSynapseErrorDerivative = value;
+                    }
                 }
             }
         }
@@ -182,9 +199,15 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
             throw new NotImplementedException();
         }
 
-        for (int planeIndex = 0; planeIndex < dimensions.depth; planeIndex++) {
+        if ((dimensions.kernelDepth != 1) || (dimensions.inputDepth != 1) || (dimensions.outputDepth != 1)) {
 
-            NeuronState<NeuronT>[][] outputPlane = neurons[planeIndex];
+            // TODO: handle this
+            throw new NotImplementedException();
+        }
+
+        for (MaxPoolingInstance<NeuronT> instance : instances) {
+
+            NeuronState<NeuronT>[][] outputPlane = instance.neurons[0];
 
             for (int outputY = 0; outputY < dimensions.outputHeight; outputY++) {
 
@@ -244,5 +267,29 @@ public class MaxPoolingLayer<NeuronT extends Neuron> extends ActivatableLayer<Ne
         }
 
         return maxInputNeuron;
+    }
+
+    private MaxPoolingInstance<NeuronT>[] createInstanceArray(NeuronFactory<NeuronT> neuronFactory,
+                                                              ConvolutionDimensions dimensions,
+                                                              int count) {
+
+        MaxPoolingInstance<NeuronT>[] instances = createEmptyInstanceArray(count);
+
+        for (int i = 0; i < count; i++) {
+
+            instances[i] = new MaxPoolingInstance<>(neuronFactory, dimensions);
+        }
+
+        return instances;
+    }
+
+    private MaxPoolingInstance<NeuronT>[] createEmptyInstanceArray(int count) {
+
+        @SuppressWarnings("unchecked")
+        MaxPoolingInstance<NeuronT>[] instances = (MaxPoolingInstance<NeuronT>[]) Array.newInstance(
+                MaxPoolingInstance.class,
+                count);
+
+        return instances;
     }
 }
